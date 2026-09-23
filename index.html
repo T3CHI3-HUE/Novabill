@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InvoiceGen - Invoice Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-50 font-sans text-gray-800 antialiased">
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-4 right-4 z-[100] space-y-3 w-80 max-w-[90vw]"></div>
+
+  <!-- ==================== AUTH VIEW ==================== -->
+  <div id="auth-view" class="min-h-screen flex">
+    <!-- Left Branding Panel -->
+    <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 text-white p-12 flex-col justify-between relative overflow-hidden">
+      <div class="absolute -top-20 -right-20 w-80 h-80 bg-white/10 rounded-full blur-2xl"></div>
+      <div class="absolute bottom-10 -left-20 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl"></div>
+      <div class="relative z-10">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center text-2xl">📄</div>
+          <span class="text-2xl font-bold tracking-tight">InvoiceGen</span>
+        </div>
+        <h1 class="mt-16 text-4xl font-bold leading-tight">Create beautiful invoices<br>in seconds.</h1>
+        <p class="mt-4 text-indigo-200 text-lg">Generate, edit, store, and send professional invoices with ease. Save your clients, track payments, and download PDFs instantly.</p>
+        <div class="mt-10 space-y-4">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-white/15 rounded-lg flex items-center justify-center">✓</div>
+            <span>Local storage with auto-save</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-white/15 rounded-lg flex items-center justify-center">✓</div>
+            <span>Email invoices directly to your clients</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-white/15 rounded-lg flex items-center justify-center">✓</div>
+            <span>PDF generation built-in</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-white/15 rounded-lg flex items-center justify-center">✓</div>
+            <span>Save consistent clients</span>
+          </div>
+        </div>
+      </div>
+      <p class="relative z-10 text-indigo-300 text-sm">© 2026 mirage visuals. All rights reserved.</p>
+    </div>
+
+    <!-- Right Form Panel -->
+    <div class="flex-1 flex items-center justify-center p-6 bg-gray-50">
+      <div class="w-full max-w-md">
+        <div class="lg:hidden flex items-center gap-2 mb-8 justify-center">
+          <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-xl">📄</div>
+          <span class="text-2xl font-bold text-gray-900">InvoiceGen</span>
+        </div>
+
+        <!-- Login Form -->
+        <div id="login-form" class="bg-white rounded-2xl shadow-xl p-8">
+          <h2 class="text-2xl font-bold text-gray-900">Welcome back</h2>
+          <p class="text-gray-500 mt-1 text-sm">Sign in to your account to continue</p>
+          <form id="login-form-element" class="mt-6 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Email address</label>
+              <input type="email" id="login-email" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="you@example.com">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <div class="relative">
+                <input type="password" id="login-password" required class="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="••••••••">
+                <button type="button" onclick="togglePassword('login-password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition" title="Show password">
+                  <svg class="w-5 h-5" id="login-password-eye" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                </button>
+              </div>
+            </div>
+            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-lg transition shadow-md shadow-indigo-200">
+              Sign In
+            </button>
+          </form>
+          <p class="mt-4 text-center text-sm text-gray-500">
+            Don't have an account?
+            <button onclick="showSignup()" class="text-indigo-600 font-semibold hover:underline">Sign up</button>
+          </p>
+        </div>
+
+        <!-- Signup Form -->
+        <div id="signup-form" class="bg-white rounded-2xl shadow-xl p-8 hidden">
+          <h2 class="text-2xl font-bold text-gray-900">Create account</h2>
+          <p class="text-gray-500 mt-1 text-sm">Start generating invoices in minutes</p>
+          <form id="signup-form-element" class="mt-6 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Full name</label>
+              <input type="text" id="signup-name" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="John Doe">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Email address</label>
+              <input type="email" id="signup-email" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="you@example.com">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <div class="relative">
+                <input type="password" id="signup-password" required minlength="6" class="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="Minimum 6 characters">
+                <button type="button" onclick="togglePassword('signup-password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition" title="Show password">
+                  <svg class="w-5 h-5" id="signup-password-eye" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                </button>
+              </div>
+            </div>
+            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-lg transition shadow-md shadow-indigo-200">
+              Create Account
+            </button>
+          </form>
+          <p class="mt-4 text-center text-sm text-gray-500">
+            Already have an account?
+            <button onclick="showLogin()" class="text-indigo-600 font-semibold hover:underline">Sign in</button>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== APP VIEW ==================== -->
+  <div id="app-view" class="hidden min-h-screen flex bg-gray-50">
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-gray-900 text-gray-300 flex flex-col transition-transform duration-300 lg:translate-x-0 -translate-x-full">
+      <div class="p-5 border-b border-gray-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-xl">📄</div>
+          <div>
+            <span class="text-lg font-bold text-white">InvoiceGen</span>
+            <p id="sidebar-user-name" class="text-xs text-gray-500 truncate">User</p>
+          </div>
+        </div>
+      </div>
+      <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+        <button class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 hover:text-white transition" data-view="dashboard">
+          <span class="text-lg">📊</span> Dashboard
+        </button>
+        <button class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 hover:text-white transition" data-view="invoices">
+          <span class="text-lg">🧾</span> Invoices
+          <span id="nav-invoice-count" class="ml-auto bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full hidden"></span>
+        </button>
+        <button class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 hover:text-white transition" data-view="clients">
+          <span class="text-lg">👥</span> Clients
+        </button>
+        <button class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 hover:text-white transition" data-view="settings">
+          <span class="text-lg">⚙️</span> Settings
+        </button>
+      </nav>
+      <div class="p-4 border-t border-gray-800">
+        <button id="logout-btn" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 transition">
+          <span class="text-lg">🚪</span> Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- Mobile overlay -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden lg:hidden"></div>
+
+    <!-- Main Content -->
+    <div class="flex-1 lg:ml-64 flex flex-col min-h-screen">
+      <!-- Topbar -->
+      <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
+        <div class="flex items-center gap-3">
+          <button id="menu-btn" class="lg:hidden p-2 rounded-lg hover:bg-gray-100">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <h1 id="page-title" class="text-xl font-bold text-gray-900">Dashboard</h1>
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="new-invoice-top-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-2">
+            <span class="text-lg leading-none">+</span> New Invoice
+          </button>
+          <div class="w-9 h-9 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center font-bold text-sm" id="topbar-avatar">U</div>
+        </div>
+      </header>
+
+      <main class="flex-1 p-6">
+        <!-- ========== DASHBOARD VIEW ========== -->
+        <section id="dashboard-view" class="view-section">
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-500 font-medium">Total Invoices</p>
+                  <p id="stat-total-invoices" class="text-2xl font-bold text-gray-900 mt-1">0</p>
+                </div>
+                <div class="w-11 h-11 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center text-xl">🧾</div>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-500 font-medium">Total Revenue</p>
+                  <p id="stat-total-revenue" class="text-2xl font-bold text-gray-900 mt-1">$0.00</p>
+                </div>
+                <div class="w-11 h-11 bg-green-100 text-green-600 rounded-lg flex items-center justify-center text-xl">💰</div>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-500 font-medium">Outstanding</p>
+                  <p id="stat-outstanding" class="text-2xl font-bold text-amber-600 mt-1">$0.00</p>
+                </div>
+                <div class="w-11 h-11 bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center text-xl">⏳</div>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-500 font-medium">Saved Clients</p>
+                  <p id="stat-total-clients" class="text-2xl font-bold text-gray-900 mt-1">0</p>
+                </div>
+                <div class="w-11 h-11 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center text-xl">👥</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="xl:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100">
+              <div class="p-5 border-b border-gray-100 flex items-center justify-between">
+                <h3 class="font-semibold text-gray-900">Recent Invoices</h3>
+                <button onclick="showView('invoices')" class="text-sm text-indigo-600 font-medium hover:underline">View all</button>
+              </div>
+              <div id="recent-invoices-list" class="p-2">
+                <div class="p-8 text-center text-gray-400 text-sm">No invoices yet. Click "New Invoice" to get started.</div>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+              <div class="p-5 border-b border-gray-100">
+                <h3 class="font-semibold text-gray-900">Quick Actions</h3>
+              </div>
+              <div class="p-5 space-y-3">
+                <button onclick="openNewInvoice()" class="w-full flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition group">
+                  <div class="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center text-lg group-hover:scale-110 transition">+</div>
+                  <div class="text-left">
+                    <p class="font-medium text-gray-900 text-sm">Create New Invoice</p>
+                    <p class="text-xs text-gray-500">Start a fresh invoice</p>
+                  </div>
+                </button>
+                <button onclick="showView('clients')" class="w-full flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition group">
+                  <div class="w-10 h-10 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center text-lg group-hover:scale-110 transition">👥</div>
+                  <div class="text-left">
+                    <p class="font-medium text-gray-900 text-sm">Manage Clients</p>
+                    <p class="text-xs text-gray-500">Add or edit saved clients</p>
+                  </div>
+                </button>
+                <button onclick="showView('settings')" class="w-full flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-green-300 hover:bg-green-50 transition group">
+                  <div class="w-10 h-10 bg-green-100 text-green-600 rounded-lg flex items-center justify-center text-lg group-hover:scale-110 transition">⚙️</div>
+                  <div class="text-left">
+                    <p class="font-medium text-gray-900 text-sm">Company Settings</p>
+                    <p class="text-xs text-gray-500">Set your business details</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========== INVOICES VIEW ========== -->
+        <section id="invoices-view" class="view-section hidden">
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+              <div class="flex items-center gap-3 flex-1">
+                <div class="relative flex-1 max-w-xs">
+                  <input type="text" id="invoice-search" placeholder="Search invoices..." class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                  <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 7 7 0 0114 0z"/></svg>
+                </div>
+                <select id="invoice-status-filter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white">
+                  <option value="">All Statuses</option>
+                  <option value="draft">Draft</option>
+                  <option value="sent">Sent</option>
+                  <option value="paid">Paid</option>
+                  <option value="overdue">Overdue</option>
+                </select>
+              </div>
+              <button onclick="openNewInvoice()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition flex items-center gap-2">
+                <span class="text-lg leading-none">+</span> New Invoice
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="bg-gray-50 text-gray-500 text-left">
+                    <th class="px-5 py-3 font-medium">Invoice #</th>
+                    <th class="px-5 py-3 font-medium">Client</th>
+                    <th class="px-5 py-3 font-medium">Date</th>
+                    <th class="px-5 py-3 font-medium">Due Date</th>
+                    <th class="px-5 py-3 font-medium">Amount</th>
+                    <th class="px-5 py-3 font-medium">Status</th>
+                    <th class="px-5 py-3 font-medium text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="invoices-table-body">
+                  <tr>
+                    <td colspan="7" class="px-5 py-10 text-center text-gray-400">Loading invoices...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========== INVOICE EDITOR VIEW ========== -->
+        <section id="editor-view" class="view-section hidden">
+          <div class="max-w-5xl mx-auto">
+            <div class="flex items-center justify-between mb-5">
+              <div>
+                <h2 id="editor-title" class="text-2xl font-bold text-gray-900">New Invoice</h2>
+                <p class="text-sm text-gray-500">Fill in the details below</p>
+              </div>
+              <button onclick="showView('invoices')" class="text-gray-500 hover:text-gray-700 text-sm font-medium flex items-center gap-1">
+                ← Back to Invoices
+              </button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
+              <!-- Invoice Meta -->
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Invoice #</label>
+                  <input type="text" id="inv-number" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="INV-001">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Issue Date</label>
+                  <input type="date" id="inv-date" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                  <input type="date" id="inv-due-date" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select id="inv-status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white">
+                    <option value="draft">Draft</option>
+                    <option value="sent">Sent</option>
+                    <option value="paid">Paid</option>
+                    <option value="overdue">Overdue</option>
+                  </select>
+                </div>
+              </div>
+
+              <hr class="border-gray-200">
+
+              <!-- From / Company -->
+              <div>
+                <h3 class="font-semibold text-gray-900 mb-3 flex items-center gap-2"><span class="text-indigo-600">🏢</span> From (Your Company)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                    <input type="text" id="from-name" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Acme Inc.">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="from-email" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="billing@acme.com">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <input type="text" id="from-phone" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="+1 (555) 000-0000">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Logo URL (optional)</label>
+                    <input type="text" id="from-logo" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="https://... or upload below">
+                  </div>
+                  <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                    <input type="text" id="from-address" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="123 Business St">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
+                    <input type="text" id="from-city" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="New York">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">State / ZIP</label>
+                    <input type="text" id="from-state-zip" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="NY 10001">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                    <input type="text" id="from-country" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="United States">
+                  </div>
+                  <div class="flex items-end">
+                    <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-600 bg-gray-50 border border-dashed border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-100 transition w-full justify-center">
+                      <span>📎</span> Upload Logo
+                      <input type="file" id="from-logo-upload" accept="image/*" class="hidden">
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <hr class="border-gray-200">
+
+              <!-- Bill To -->
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="font-semibold text-gray-900 flex items-center gap-2"><span class="text-indigo-600">👤</span> Bill To</h3>
+                  <div class="flex items-center gap-2">
+                    <select id="client-select" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white max-w-56">
+                      <option value="">Select saved client...</option>
+                    </select>
+                    <button onclick="loadClientToForm()" class="text-sm text-indigo-600 font-medium hover:underline">Load</button>
+                  </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Client Name *</label>
+                    <input type="text" id="to-name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Jane Smith">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Client Email</label>
+                    <input type="email" id="to-email" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="jane@company.com">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <input type="text" id="to-phone" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="+1 (555) 000-0000">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                    <input type="text" id="to-address" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="456 Client Ave">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
+                    <input type="text" id="to-city" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Los Angeles">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">State / ZIP</label>
+                    <input type="text" id="to-state-zip" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="CA 90001">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                    <input type="text" id="to-country" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="United States">
+                  </div>
+                  <div class="flex items-end">
+                    <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-600 bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-100 transition">
+                      <input type="checkbox" id="save-client-checkbox" class="rounded text-indigo-600 focus:ring-indigo-500">
+                      Save this client
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <hr class="border-gray-200">
+
+              <!-- Items -->
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="font-semibold text-gray-900 flex items-center gap-2"><span class="text-indigo-600">📦</span> Items / Services</h3>
+                  <button onclick="addItemRow()" class="text-sm bg-indigo-50 text-indigo-600 font-medium px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition">+ Add Item</button>
+                </div>
+                <div class="overflow-x-auto">
+                  <table class="w-full text-sm" id="items-table">
+                    <thead>
+                      <tr class="bg-gray-50 text-gray-500">
+                        <th class="px-3 py-2.5 font-medium text-left w-1/2">Description</th>
+                        <th class="px-3 py-2.5 font-medium text-left w-20">Qty</th>
+                        <th class="px-3 py-2.5 font-medium text-left w-32">Unit Price</th>
+                        <th class="px-3 py-2.5 font-medium text-left w-24">Tax %</th>
+                        <th class="px-3 py-2.5 font-medium text-right w-32">Amount</th>
+                        <th class="px-3 py-2.5 w-10"></th>
+                      </tr>
+                    </thead>
+                    <tbody id="items-table-body">
+                      <!-- Item rows injected by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Totals -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <textarea id="inv-notes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none" placeholder="Thank you for your business!"></textarea>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Terms & Conditions</label>
+                    <textarea id="inv-terms" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none" placeholder="Payment due within 30 days."></textarea>
+                  </div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-5 space-y-3">
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Subtotal</span>
+                    <span id="calc-subtotal" class="font-semibold text-gray-900">$0.00</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-gray-500 text-sm">Discount</span>
+                    <select id="discount-type" class="ml-auto px-2 py-1 border border-gray-300 rounded text-xs bg-white">
+                      <option value="percentage">%</option>
+                      <option value="fixed">$</option>
+                    </select>
+                    <input type="number" id="discount-value" min="0" step="0.01" value="0" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm text-right focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Tax</span>
+                    <span id="calc-tax" class="font-semibold text-gray-900">$0.00</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-gray-500 text-sm">Shipping</span>
+                    <input type="number" id="shipping-cost" min="0" step="0.01" value="0" class="ml-auto w-24 px-2 py-1 border border-gray-300 rounded text-sm text-right focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Currency</span>
+                    <select id="inv-currency" class="px-2 py-1 border border-gray-300 rounded text-sm bg-white">
+                      <option value="USD">USD $</option>
+                      <option value="EUR">EUR €</option>
+                      <option value="GBP">GBP £</option>
+                      <option value="NGN">NGN ₦</option>
+                      <option value="CAD">CAD $</option>
+                      <option value="AUD">AUD $</option>
+                    </select>
+                  </div>
+                  <div class="border-t border-gray-200 pt-3 flex justify-between">
+                    <span class="font-semibold text-gray-900">Total</span>
+                    <span id="calc-total" class="text-xl font-bold text-indigo-600">$0.00</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="flex flex-wrap gap-3 pt-2 border-t border-gray-200">
+                <button onclick="saveInvoice('draft')" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-sm transition">💾 Save Draft</button>
+                <button onclick="saveInvoice('sent')" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm transition shadow-sm">💾 Save Invoice</button>
+                <button onclick="markCurrentInvoiceAsPaid()" class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg text-sm transition shadow-sm">✅ Mark as Paid</button>
+                <button onclick="generatePDF()" class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg text-sm transition shadow-sm">📄 Generate PDF</button>
+                <button onclick="sendInvoiceEmail()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm transition shadow-sm">✉️ Send Email</button>
+                <button onclick="showView('invoices')" class="px-5 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-600 font-semibold rounded-lg text-sm transition">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========== CLIENTS VIEW ========== -->
+        <section id="clients-view" class="view-section hidden">
+          <div class="flex items-center justify-between mb-5">
+            <div>
+              <h2 class="text-2xl font-bold text-gray-900">Clients</h2>
+              <p class="text-sm text-gray-500">Manage your saved clients</p>
+            </div>
+            <button onclick="openClientModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition flex items-center gap-2">
+              <span class="text-lg leading-none">+</span> Add Client
+            </button>
+          </div>
+          <div id="clients-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div class="p-10 text-center text-gray-400 text-sm col-span-full">Loading clients...</div>
+          </div>
+        </section>
+
+        <!-- ========== SETTINGS VIEW ========== -->
+        <section id="settings-view" class="view-section hidden">
+          <div class="max-w-3xl mx-auto">
+            <h2 class="text-2xl font-bold text-gray-900 mb-1">Settings</h2>
+            <p class="text-sm text-gray-500 mb-6">Configure your default company information</p>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
+              <div>
+                <h3 class="font-semibold text-gray-900 mb-3">Default Company Info</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                    <input type="text" id="settings-company-name" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="settings-company-email" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <input type="text" id="settings-company-phone" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                    <input type="text" id="settings-company-address" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
+                    <input type="text" id="settings-company-city" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">State / ZIP</label>
+                    <input type="text" id="settings-company-state-zip" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                    <input type="text" id="settings-company-country" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Default Currency</label>
+                    <select id="settings-currency" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white">
+                      <option value="USD">USD $</option>
+                      <option value="EUR">EUR €</option>
+                      <option value="GBP">GBP £</option>
+                      <option value="NGN">NGN ₦</option>
+                      <option value="CAD">CAD $</option>
+                      <option value="AUD">AUD $</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="flex justify-end pt-4 border-t border-gray-200">
+                <button onclick="saveSettings()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2.5 rounded-lg text-sm transition">Save Settings</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- ==================== PREVIEW MODAL ==================== -->
+  <div id="preview-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closePreviewModal()"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col">
+      <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+        <h3 class="font-semibold text-gray-900">Invoice Preview</h3>
+        <div class="flex items-center gap-2">
+          <button onclick="generatePDF()" class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-3 py-1.5 rounded-lg transition">📄 PDF</button>
+          <button onclick="sendInvoiceEmail()" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-3 py-1.5 rounded-lg transition">✉️ Email</button>
+          <button onclick="closePreviewModal()" class="p-1.5 text-gray-400 hover:text-gray-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="preview-content" class="flex-1 overflow-y-auto p-8 bg-gray-50">
+        <!-- Preview rendered by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== CLIENT MODAL ==================== -->
+  <div id="client-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeClientModal()"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 id="client-modal-title" class="font-semibold text-gray-900">Add Client</h3>
+        <button onclick="closeClientModal()" class="p-1 text-gray-400 hover:text-gray-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <form id="client-form" class="space-y-4">
+        <input type="hidden" id="client-id">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Client Name *</label>
+          <input type="text" id="client-name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Jane Smith">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <input type="email" id="client-email" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="jane@company.com">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+          <input type="text" id="client-phone" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="+1 (555) 000-0000">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+          <input type="text" id="client-address" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="456 Client Ave">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
+            <input type="text" id="client-city" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Los Angeles">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">State / ZIP</label>
+            <input type="text" id="client-state-zip" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="CA 90001">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Country</label>
+          <input type="text" id="client-country" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="United States">
+        </div>
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" onclick="closeClientModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition">Save Client</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== CONFIRM MODAL ==================== -->
+  <div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeConfirmModal()"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
+      <div class="w-14 h-14 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-3">⚠️</div>
+      <h3 id="confirm-title" class="font-semibold text-gray-900 text-lg">Are you sure?</h3>
+      <p id="confirm-message" class="text-sm text-gray-500 mt-1">This action cannot be undone.</p>
+      <div class="flex gap-3 mt-5 justify-center">
+        <button onclick="closeConfirmModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition">Cancel</button>
+        <button id="confirm-action-btn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
