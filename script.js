@@ -212,6 +212,32 @@ function getAuthErrorMessage(code) {
 }
 
 // ============================================================
+// PASSWORD VISIBILITY TOGGLE
+// ============================================================
+function togglePassword(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+
+  const isPassword = input.type === 'password';
+  input.type = isPassword ? 'text' : 'password';
+
+  // Update the eye icon
+  const eyeIcon = btn.querySelector('svg');
+  if (eyeIcon) {
+    if (isPassword) {
+      // Password is now visible - show eye-off icon
+      eyeIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/>';
+    } else {
+      // Password is hidden - show eye icon
+      eyeIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>';
+    }
+  }
+
+  // Update tooltip
+  btn.title = isPassword ? 'Hide password' : 'Show password';
+}
+
+// ============================================================
 // VIEW MANAGEMENT
 // ============================================================
 function showAuth() {
@@ -1286,102 +1312,133 @@ function renderInvoiceHTML(inv) {
 
   const itemsRows = (inv.items || []).map(item => `
     <tr class="border-b border-gray-100">
-      <td class="py-3 pr-4">${escapeHtml(item.description || '')}</td>
-      <td class="py-3 px-4 text-center">${item.quantity || 0}</td>
-      <td class="py-3 px-4 text-right">${formatCurrency(item.unitPrice || 0, currency)}</td>
-      <td class="py-3 px-4 text-right">${item.taxRate || 0}%</td>
-      <td class="py-3 pl-4 text-right font-medium">${formatCurrency(item.total || 0, currency)}</td>
+      <td class="p-3 text-left break-words font-medium">${escapeHtml(item.description || '')}</td>
+      <td class="p-3 text-center font-medium">${item.quantity || 0}</td>
+      <td class="p-3 text-right whitespace-nowrap font-bold text-gray-900">${formatCurrency(item.unitPrice || 0, currency)}</td>
+      <td class="p-3 text-center font-medium">${item.taxRate || 0}%</td>
+      <td class="p-3 text-right font-bold text-gray-900 whitespace-nowrap">${formatCurrency(item.total || 0, currency)}</td>
     </tr>
   `).join('');
 
   return `
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 max-w-3xl mx-auto">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 max-w-3xl mx-auto overflow-hidden">
       <!-- Header -->
-      <div class="flex items-start justify-between border-b border-gray-200 pb-6">
-        <div>
+      <div class="preview-header bg-gray-900 px-5 sm:px-8 py-5 sm:py-6 flex items-start justify-between">
+        <div class="text-white">
           ${inv.logoDataUrl ? `<img src="${inv.logoDataUrl}" alt="Logo" class="h-14 w-auto mb-3 object-contain">` : ''}
           ${inv.fromLogo && !inv.logoDataUrl ? `<img src="${escapeAttr(inv.fromLogo)}" alt="Logo" class="h-14 w-auto mb-3 object-contain">` : ''}
-          <h2 class="text-2xl font-bold text-gray-900">${escapeHtml(inv.fromName || 'Your Company')}</h2>
-          ${inv.fromAddress ? `<p class="text-sm text-gray-500">${escapeHtml(inv.fromAddress)}</p>` : ''}
-          ${inv.fromCity ? `<p class="text-sm text-gray-500">${escapeHtml(inv.fromCity)}${inv.fromStateZip ? ', ' + escapeHtml(inv.fromStateZip) : ''}${inv.fromCountry ? ', ' + escapeHtml(inv.fromCountry) : ''}</p>` : ''}
-          ${inv.fromEmail ? `<p class="text-sm text-gray-500">${escapeHtml(inv.fromEmail)}</p>` : ''}
-          ${inv.fromPhone ? `<p class="text-sm text-gray-500">${escapeHtml(inv.fromPhone)}</p>` : ''}
+          <h2 class="text-2xl font-bold text-white">${escapeHtml(inv.fromName || 'Your Company')}</h2>
+          ${inv.fromAddress ? `<p class="text-sm text-gray-300 break-words">${escapeHtml(inv.fromAddress)}</p>` : ''}
+          ${inv.fromCity ? `<p class="text-sm text-gray-300 break-words">${escapeHtml(inv.fromCity)}${inv.fromStateZip ? ', ' + escapeHtml(inv.fromStateZip) : ''}${inv.fromCountry ? ', ' + escapeHtml(inv.fromCountry) : ''}</p>` : ''}
+          ${inv.fromEmail ? `<p class="text-sm text-gray-300 break-words">${escapeHtml(inv.fromEmail)}</p>` : ''}
+          ${inv.fromPhone ? `<p class="text-sm text-gray-300">${escapeHtml(inv.fromPhone)}</p>` : ''}
         </div>
         <div class="text-right">
-          <h1 class="text-3xl font-bold text-indigo-600">INVOICE</h1>
-          <p class="text-lg font-semibold text-gray-900 mt-2">${escapeHtml(inv.number || '')}</p>
+          <h1 class="text-3xl font-bold text-white">INVOICE</h1>
+          <p class="text-lg font-semibold text-white mt-2">${escapeHtml(inv.number || '')}</p>
           <div class="mt-3 space-y-1 text-sm">
-            <p class="text-gray-500">Issue Date: <span class="font-medium text-gray-900">${inv.date ? formatDate(inv.date) : '—'}</span></p>
-            <p class="text-gray-500">Due Date: <span class="font-medium text-gray-900">${inv.dueDate ? formatDate(inv.dueDate) : '—'}</span></p>
+            <p class="text-gray-300">Issue Date: <span class="font-medium text-white">${inv.date ? formatDate(inv.date) : '—'}</span></p>
+            <p class="text-gray-300">Due Date: <span class="font-medium text-white">${inv.dueDate ? formatDate(inv.dueDate) : '—'}</span></p>
           </div>
           <span class="inline-block mt-3 px-3 py-1 rounded-full text-xs font-semibold ${statusColor}">${inv.status.charAt(0).toUpperCase() + inv.status.slice(1)}</span>
         </div>
       </div>
 
       <!-- Bill To -->
-      <div class="py-6 border-b border-gray-200">
-        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Bill To</p>
-        <h3 class="text-lg font-bold text-gray-900">${escapeHtml(inv.toName || '')}</h3>
-        ${inv.toAddress ? `<p class="text-sm text-gray-500">${escapeHtml(inv.toAddress)}</p>` : ''}
-        ${inv.toCity ? `<p class="text-sm text-gray-500">${escapeHtml(inv.toCity)}${inv.toStateZip ? ', ' + escapeHtml(inv.toStateZip) : ''}${inv.toCountry ? ', ' + escapeHtml(inv.toCountry) : ''}</p>` : ''}
-        ${inv.toEmail ? `<p class="text-sm text-gray-500">${escapeHtml(inv.toEmail)}</p>` : ''}
-        ${inv.toPhone ? `<p class="text-sm text-gray-500">${escapeHtml(inv.toPhone)}</p>` : ''}
+      <div class="px-5 sm:px-8 py-5 sm:py-6 border-b border-gray-200">
+        <div class="bg-gray-50 rounded-lg p-3 sm:p-4">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Bill To</p>
+          <h3 class="text-lg font-bold text-gray-900">${escapeHtml(inv.toName || '')}</h3>
+          ${inv.toAddress ? `<p class="text-sm text-gray-600 break-words">${escapeHtml(inv.toAddress)}</p>` : ''}
+          ${inv.toCity ? `<p class="text-sm text-gray-600 break-words">${escapeHtml(inv.toCity)}${inv.toStateZip ? ', ' + escapeHtml(inv.toStateZip) : ''}${inv.toCountry ? ', ' + escapeHtml(inv.toCountry) : ''}</p>` : ''}
+          ${inv.toEmail ? `<p class="text-sm text-gray-600 break-words">${escapeHtml(inv.toEmail)}</p>` : ''}
+          ${inv.toPhone ? `<p class="text-sm text-gray-600">${escapeHtml(inv.toPhone)}</p>` : ''}
+        </div>
       </div>
 
       <!-- Items Table -->
-      <div class="py-6">
-        <table class="w-full text-sm">
+      <div class="px-4 sm:px-8 py-4 sm:py-6 overflow-x-auto">
+        <table class="w-full text-sm table-fixed min-w-[480px]">
           <thead>
-            <tr class="bg-gray-50 text-gray-500 text-left">
-              <th class="py-2.5 px-4 font-medium rounded-l-lg">Description</th>
-              <th class="py-2.5 px-4 font-medium text-center">Qty</th>
-              <th class="py-2.5 px-4 font-medium text-right">Unit Price</th>
-              <th class="py-2.5 px-4 font-medium text-right">Tax</th>
-              <th class="py-2.5 px-4 font-medium text-right rounded-r-lg">Amount</th>
+            <tr class="bg-gray-50 text-gray-500">
+              <th class="p-3 font-semibold text-left w-[28%]">Description</th>
+              <th class="p-3 font-semibold text-center w-[7%]">Qty</th>
+              <th class="p-3 font-semibold text-right w-[27%]">Unit Price</th>
+              <th class="p-3 font-semibold text-center w-[7%]">Tax</th>
+              <th class="p-3 font-semibold text-right w-[31%]">Amount</th>
             </tr>
           </thead>
           <tbody>
-            ${itemsRows || '<tr><td colspan="5" class="py-4 text-center text-gray-400">No items</td></tr>'}
+            ${itemsRows || '<tr><td colspan="5" class="p-4 text-center text-gray-400">No items</td></tr>'}
           </tbody>
         </table>
       </div>
 
+      <!-- Responsive Items Table for Mobile -->
+      <div class="px-4 sm:px-8 py-4 sm:py-6 sm:hidden">
+        <div class="rounded-lg border border-gray-200 overflow-hidden">
+          ${(inv.items || []).map(item => `
+            <div class="p-3 border-b border-gray-100 last:border-b-0">
+              <p class="text-sm font-semibold text-gray-900">${escapeHtml(item.description || '')}</p>
+              <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <span class="text-gray-400">Qty:</span>
+                  <span class="font-semibold text-gray-700">${item.quantity || 0}</span>
+                </div>
+                <div>
+                  <span class="text-gray-400">Tax:</span>
+                  <span class="font-semibold text-gray-700">${item.taxRate || 0}%</span>
+                </div>
+                <div>
+                  <span class="text-gray-400">Unit Price:</span>
+                  <span class="font-bold text-gray-900">${formatCurrency(item.unitPrice || 0, currency)}</span>
+                </div>
+                <div>
+                  <span class="text-gray-400">Amount:</span>
+                  <span class="font-bold text-gray-900">${formatCurrency(item.total || 0, currency)}</span>
+                </div>
+              </div>
+            </div>
+          `).join('') || '<div class="p-4 text-center text-gray-400 text-sm">No items</div>'}
+        </div>
+      </div>
+
       <!-- Totals -->
-      <div class="flex justify-end">
-        <div class="w-72 space-y-2">
+      <div class="px-5 sm:px-8 pb-5 sm:pb-8">
+        <div class="bg-gray-900 rounded-lg p-5 ml-auto w-72 space-y-2">
           <div class="flex justify-between text-sm">
-            <span class="text-gray-500">Subtotal</span>
-            <span class="font-medium text-gray-900">${formatCurrency(inv.subtotal || 0, currency)}</span>
+            <span class="text-gray-300">Subtotal</span>
+            <span class="font-medium text-white">${formatCurrency(inv.subtotal || 0, currency)}</span>
           </div>
           ${inv.discountAmount > 0 ? `
           <div class="flex justify-between text-sm">
-            <span class="text-gray-500">Discount (${inv.discountType === 'percentage' ? inv.discountValue + '%' : formatCurrency(inv.discountValue, currency)})</span>
-            <span class="font-medium text-red-500">-${formatCurrency(inv.discountAmount, currency)}</span>
+            <span class="text-gray-300">Discount (${inv.discountType === 'percentage' ? inv.discountValue + '%' : formatCurrency(inv.discountValue, currency)})</span>
+            <span class="font-medium text-red-400">-${formatCurrency(inv.discountAmount, currency)}</span>
           </div>` : ''}
           <div class="flex justify-between text-sm">
-            <span class="text-gray-500">Tax</span>
-            <span class="font-medium text-gray-900">${formatCurrency(inv.taxTotal || 0, currency)}</span>
+            <span class="text-gray-300">Tax</span>
+            <span class="font-medium text-white">${formatCurrency(inv.taxTotal || 0, currency)}</span>
           </div>
           ${inv.shippingCost > 0 ? `
           <div class="flex justify-between text-sm">
-            <span class="text-gray-500">Shipping</span>
-            <span class="font-medium text-gray-900">${formatCurrency(inv.shippingCost, currency)}</span>
+            <span class="text-gray-300">Shipping</span>
+            <span class="font-medium text-white">${formatCurrency(inv.shippingCost, currency)}</span>
           </div>` : ''}
-          <div class="flex justify-between border-t border-gray-200 pt-2">
-            <span class="font-bold text-gray-900">Total</span>
-            <span class="text-xl font-bold text-indigo-600">${formatCurrency(inv.total || 0, currency)}</span>
+          <div class="flex justify-between border-t border-gray-700 pt-2">
+            <span class="font-bold text-white">Total</span>
+            <span class="text-xl font-bold text-white">${formatCurrency(inv.total || 0, currency)}</span>
           </div>
         </div>
       </div>
 
       <!-- Notes & Terms -->
       ${inv.notes ? `
-      <div class="mt-6 pt-6 border-t border-gray-200">
+      <div class="px-5 sm:px-8 pb-4 sm:pb-6">
         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Notes</p>
         <p class="text-sm text-gray-600 whitespace-pre-line">${escapeHtml(inv.notes)}</p>
       </div>` : ''}
       ${inv.terms ? `
-      <div class="mt-4">
+      <div class="px-5 sm:px-8 pb-5 sm:pb-8">
         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Terms & Conditions</p>
         <p class="text-sm text-gray-600 whitespace-pre-line">${escapeHtml(inv.terms)}</p>
       </div>` : ''}
@@ -1406,11 +1463,14 @@ function generatePDF() {
     const grayColor = [107, 114, 128];
     const lightGray = [243, 244, 246];
     const darkColor = [17, 24, 39];
+    const whiteColor = [255, 255, 255];
+    const lightTextColor = [243, 244, 246]; // gray-100 for dark backgrounds
 
     // Header
-    doc.setFillColor(...primaryColor);
-    doc.rect(0, 0, 210, 40, 'F');
-    doc.setTextColor(255, 255, 255);
+    const headerHeight = 55;
+    doc.setFillColor(...darkColor);
+    doc.rect(0, 0, 210, headerHeight, 'F');
+    doc.setTextColor(...whiteColor);
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
     doc.text('INVOICE', 14, 16);
@@ -1419,56 +1479,82 @@ function generatePDF() {
     doc.setFont('helvetica', 'normal');
     doc.text(invoiceData.number || '', 196, 16, { align: 'right' });
 
-    // Company info
-    doc.setTextColor(...darkColor);
+    // Company info (on dark header - use light text, wrap within header)
+    doc.setTextColor(...whiteColor);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.text(invoiceData.fromName || 'Your Company', 14, 30);
 
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...grayColor);
+    doc.setTextColor(...lightTextColor);
 
     let y = 36;
-    if (invoiceData.fromAddress) { doc.text(invoiceData.fromAddress, 14, y); y += 4; }
+    if (invoiceData.fromAddress) {
+      const addrLines = doc.splitTextToSize(invoiceData.fromAddress, 120);
+      doc.text(addrLines, 14, y);
+      y += addrLines.length * 4;
+    }
     if (invoiceData.fromCity) {
       const cityLine = [invoiceData.fromCity, invoiceData.fromStateZip, invoiceData.fromCountry].filter(Boolean).join(', ');
-      doc.text(cityLine, 14, y); y += 4;
+      const cityLines = doc.splitTextToSize(cityLine, 120);
+      doc.text(cityLines, 14, y);
+      y += cityLines.length * 4;
     }
-    if (invoiceData.fromEmail) { doc.text(invoiceData.fromEmail, 14, y); y += 4; }
+    if (invoiceData.fromEmail) {
+      const emailLines = doc.splitTextToSize(invoiceData.fromEmail, 120);
+      doc.text(emailLines, 14, y);
+      y += emailLines.length * 4;
+    }
     if (invoiceData.fromPhone) { doc.text(invoiceData.fromPhone, 14, y); y += 4; }
 
-    // Invoice meta (right side)
+    // Invoice meta (right side) - on dark header use light text
     let metaY = 30;
     doc.setFontSize(9);
-    doc.setTextColor(...grayColor);
+    doc.setTextColor(...lightTextColor);
     doc.setFont('helvetica', 'normal');
 
     doc.text('Issue Date:', 140, metaY);
-    doc.setTextColor(...darkColor);
+    doc.setTextColor(...whiteColor);
     doc.setFont('helvetica', 'bold');
     doc.text(invoiceData.date ? formatDate(invoiceData.date) : '—', 196, metaY, { align: 'right' });
     metaY += 5;
 
-    doc.setTextColor(...grayColor);
+    doc.setTextColor(...lightTextColor);
     doc.setFont('helvetica', 'normal');
     doc.text('Due Date:', 140, metaY);
-    doc.setTextColor(...darkColor);
+    doc.setTextColor(...whiteColor);
     doc.setFont('helvetica', 'bold');
     doc.text(invoiceData.dueDate ? formatDate(invoiceData.dueDate) : '—', 196, metaY, { align: 'right' });
     metaY += 5;
 
-    doc.setTextColor(...grayColor);
+    doc.setTextColor(...lightTextColor);
     doc.setFont('helvetica', 'normal');
     doc.text('Status:', 140, metaY);
-    doc.setTextColor(...primaryColor);
+    doc.setTextColor(...whiteColor);
     doc.setFont('helvetica', 'bold');
     doc.text((invoiceData.status || 'draft').charAt(0).toUpperCase() + (invoiceData.status || 'draft').slice(1), 196, metaY, { align: 'right' });
 
-    // Bill To section
+    // Bill To section - dynamic height based on content
     let billY = Math.max(y + 10, metaY + 10);
+
+    // Calculate bill content height first
+    const billFields = [];
+    if (invoiceData.toAddress) billFields.push(invoiceData.toAddress);
+    if (invoiceData.toCity) billFields.push([invoiceData.toCity, invoiceData.toStateZip, invoiceData.toCountry].filter(Boolean).join(', '));
+    if (invoiceData.toEmail) billFields.push(invoiceData.toEmail);
+    if (invoiceData.toPhone) billFields.push(invoiceData.toPhone);
+
+    let billContentHeight = 12; // BILL TO label + name line
+    billFields.forEach(field => {
+      const lines = doc.splitTextToSize(field, 170);
+      billContentHeight += lines.length * 4;
+    });
+
+    const billBoxHeight = Math.max(32, billContentHeight + 8);
+
     doc.setFillColor(...lightGray);
-    doc.roundedRect(14, billY - 5, 182, 28, 2, 2, 'F');
+    doc.roundedRect(14, billY - 5, 182, billBoxHeight, 2, 2, 'F');
     doc.setTextColor(...grayColor);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
@@ -1483,16 +1569,26 @@ function generatePDF() {
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...grayColor);
     let by = billY + 12;
-    if (invoiceData.toAddress) { doc.text(invoiceData.toAddress, 18, by); by += 4; }
+    if (invoiceData.toAddress) {
+      const addrLines = doc.splitTextToSize(invoiceData.toAddress, 170);
+      doc.text(addrLines, 18, by);
+      by += addrLines.length * 4;
+    }
     if (invoiceData.toCity) {
       const cityLine = [invoiceData.toCity, invoiceData.toStateZip, invoiceData.toCountry].filter(Boolean).join(', ');
-      doc.text(cityLine, 18, by); by += 4;
+      const cityLines = doc.splitTextToSize(cityLine, 170);
+      doc.text(cityLines, 18, by);
+      by += cityLines.length * 4;
     }
-    if (invoiceData.toEmail) { doc.text(invoiceData.toEmail, 18, by); by += 4; }
+    if (invoiceData.toEmail) {
+      const emailLines = doc.splitTextToSize(invoiceData.toEmail, 170);
+      doc.text(emailLines, 18, by);
+      by += emailLines.length * 4;
+    }
     if (invoiceData.toPhone) { doc.text(invoiceData.toPhone, 18, by); by += 4; }
 
     // Items table
-    const startY = Math.max(by + 10, billY + 38);
+    const startY = Math.max(by + 10, billY + billBoxHeight + 5);
     const items = invoiceData.items || [];
     const tableRows = items.map(item => [
       item.description || '',
@@ -1509,22 +1605,23 @@ function generatePDF() {
       theme: 'striped',
       headStyles: {
         fillColor: primaryColor,
-        fontSize: 9,
+        fontSize: 10,
         fontStyle: 'bold',
-        halign: 'left',
-        cellPadding: 3,
+        cellPadding: 4,
       },
       styles: {
         fontSize: 9,
-        cellPadding: 3,
+        cellPadding: 4,
         textColor: darkColor,
+        overflow: 'visible',
+        fontStyle: 'bold',
       },
       columnStyles: {
-        0: { cellWidth: 80 },
-        1: { cellWidth: 20, halign: 'center' },
-        2: { cellWidth: 30, halign: 'right' },
-        3: { cellWidth: 20, halign: 'right' },
-        4: { cellWidth: 32, halign: 'right' },
+        0: { cellWidth: 48, halign: 'left', overflow: 'linebreak', fontStyle: 'normal' },
+        1: { cellWidth: 14, halign: 'center', overflow: 'visible', fontStyle: 'normal' },
+        2: { cellWidth: 52, halign: 'right', overflow: 'visible', fontStyle: 'bold' },
+        3: { cellWidth: 14, halign: 'center', overflow: 'visible', fontStyle: 'normal' },
+        4: { cellWidth: 54, halign: 'right', overflow: 'visible', fontStyle: 'bold' },
       },
       margin: { left: 14, right: 14 },
     });
@@ -1533,51 +1630,57 @@ function generatePDF() {
     let totalY = doc.lastAutoTable.finalY + 10;
     const rightX = 196;
 
-    doc.setFontSize(9);
-    doc.setTextColor(...grayColor);
+    // Totals box on dark background
+    const totalsBoxHeight = 6 + (invoiceData.discountAmount > 0 ? 6 : 0) + (invoiceData.shippingCost > 0 ? 6 : 0) + 6 + 10;
+    doc.setFillColor(...darkColor);
+    doc.roundedRect(120, totalY - 4, 76, totalsBoxHeight, 3, 3, 'F');
+
+    doc.setFontSize(10);
+    doc.setTextColor(...lightTextColor);
     doc.setFont('helvetica', 'normal');
-    doc.text('Subtotal:', 150, totalY);
-    doc.setTextColor(...darkColor);
+    doc.text('Subtotal:', 126, totalY);
+    doc.setTextColor(...whiteColor);
     doc.setFont('helvetica', 'bold');
     doc.text(formatCurrency(invoiceData.subtotal || 0, invoiceData.currency), rightX, totalY, { align: 'right' });
     totalY += 6;
 
     if (invoiceData.discountAmount > 0) {
-      doc.setTextColor(...grayColor);
+      doc.setTextColor(...lightTextColor);
       doc.setFont('helvetica', 'normal');
-      doc.text('Discount:', 150, totalY);
-      doc.setTextColor(220, 38, 38);
+      doc.text('Discount:', 126, totalY);
+      doc.setTextColor(248, 113, 113);
       doc.setFont('helvetica', 'bold');
       doc.text('-' + formatCurrency(invoiceData.discountAmount, invoiceData.currency), rightX, totalY, { align: 'right' });
       totalY += 6;
     }
 
-    doc.setTextColor(...grayColor);
+    doc.setTextColor(...lightTextColor);
     doc.setFont('helvetica', 'normal');
-    doc.text('Tax:', 150, totalY);
-    doc.setTextColor(...darkColor);
+    doc.text('Tax:', 126, totalY);
+    doc.setTextColor(...whiteColor);
     doc.setFont('helvetica', 'bold');
     doc.text(formatCurrency(invoiceData.taxTotal || 0, invoiceData.currency), rightX, totalY, { align: 'right' });
     totalY += 6;
 
     if (invoiceData.shippingCost > 0) {
-      doc.setTextColor(...grayColor);
+      doc.setTextColor(...lightTextColor);
       doc.setFont('helvetica', 'normal');
-      doc.text('Shipping:', 150, totalY);
-      doc.setTextColor(...darkColor);
+      doc.text('Shipping:', 126, totalY);
+      doc.setTextColor(...whiteColor);
       doc.setFont('helvetica', 'bold');
       doc.text(formatCurrency(invoiceData.shippingCost, invoiceData.currency), rightX, totalY, { align: 'right' });
       totalY += 6;
     }
 
-    // Total box
-    doc.setFillColor(...primaryColor);
-    doc.roundedRect(130, totalY - 2, 66, 10, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(11);
+    // Total line
+    doc.setDrawColor(...primaryColor);
+    doc.setLineWidth(0.5);
+    doc.line(126, totalY - 2, 196, totalY - 2);
+    doc.setTextColor(...whiteColor);
+    doc.setFontSize(13);
     doc.setFont('helvetica', 'bold');
-    doc.text('Total:', 136, totalY + 5);
-    doc.text(formatCurrency(invoiceData.total || 0, invoiceData.currency), 196, totalY + 5, { align: 'right' });
+    doc.text('Total:', 126, totalY + 5);
+    doc.text(formatCurrency(invoiceData.total || 0, invoiceData.currency), rightX, totalY + 5, { align: 'right' });
 
     // Notes and Terms
     let notesY = totalY + 15;
@@ -1764,11 +1867,14 @@ function buildPDF(doc, invoiceData) {
   const grayColor = [107, 114, 128];
   const lightGray = [243, 244, 246];
   const darkColor = [17, 24, 39];
+  const whiteColor = [255, 255, 255];
+  const lightTextColor = [243, 244, 246]; // gray-100 for dark backgrounds
 
   // Header
-  doc.setFillColor(...primaryColor);
-  doc.rect(0, 0, 210, 40, 'F');
-  doc.setTextColor(255, 255, 255);
+  const headerHeight = 55;
+  doc.setFillColor(...darkColor);
+  doc.rect(0, 0, 210, headerHeight, 'F');
+  doc.setTextColor(...whiteColor);
   doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
   doc.text('INVOICE', 14, 16);
@@ -1777,56 +1883,82 @@ function buildPDF(doc, invoiceData) {
   doc.setFont('helvetica', 'normal');
   doc.text(invoiceData.number || '', 196, 16, { align: 'right' });
 
-  // Company info
-  doc.setTextColor(...darkColor);
+  // Company info (on dark header - use light text, wrap within header)
+  doc.setTextColor(...whiteColor);
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text(invoiceData.fromName || 'Your Company', 14, 30);
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...grayColor);
+  doc.setTextColor(...lightTextColor);
 
   let y = 36;
-  if (invoiceData.fromAddress) { doc.text(invoiceData.fromAddress, 14, y); y += 4; }
+  if (invoiceData.fromAddress) {
+    const addrLines = doc.splitTextToSize(invoiceData.fromAddress, 120);
+    doc.text(addrLines, 14, y);
+    y += addrLines.length * 4;
+  }
   if (invoiceData.fromCity) {
     const cityLine = [invoiceData.fromCity, invoiceData.fromStateZip, invoiceData.fromCountry].filter(Boolean).join(', ');
-    doc.text(cityLine, 14, y); y += 4;
+    const cityLines = doc.splitTextToSize(cityLine, 120);
+    doc.text(cityLines, 14, y);
+    y += cityLines.length * 4;
   }
-  if (invoiceData.fromEmail) { doc.text(invoiceData.fromEmail, 14, y); y += 4; }
+  if (invoiceData.fromEmail) {
+    const emailLines = doc.splitTextToSize(invoiceData.fromEmail, 120);
+    doc.text(emailLines, 14, y);
+    y += emailLines.length * 4;
+  }
   if (invoiceData.fromPhone) { doc.text(invoiceData.fromPhone, 14, y); y += 4; }
 
-  // Invoice meta (right side)
+  // Invoice meta (right side) - on dark header use light text
   let metaY = 30;
   doc.setFontSize(9);
-  doc.setTextColor(...grayColor);
+  doc.setTextColor(...lightTextColor);
   doc.setFont('helvetica', 'normal');
 
   doc.text('Issue Date:', 140, metaY);
-  doc.setTextColor(...darkColor);
+  doc.setTextColor(...whiteColor);
   doc.setFont('helvetica', 'bold');
   doc.text(invoiceData.date ? formatDate(invoiceData.date) : '—', 196, metaY, { align: 'right' });
   metaY += 5;
 
-  doc.setTextColor(...grayColor);
+  doc.setTextColor(...lightTextColor);
   doc.setFont('helvetica', 'normal');
   doc.text('Due Date:', 140, metaY);
-  doc.setTextColor(...darkColor);
+  doc.setTextColor(...whiteColor);
   doc.setFont('helvetica', 'bold');
   doc.text(invoiceData.dueDate ? formatDate(invoiceData.dueDate) : '—', 196, metaY, { align: 'right' });
   metaY += 5;
 
-  doc.setTextColor(...grayColor);
+  doc.setTextColor(...lightTextColor);
   doc.setFont('helvetica', 'normal');
   doc.text('Status:', 140, metaY);
-  doc.setTextColor(...primaryColor);
+  doc.setTextColor(...whiteColor);
   doc.setFont('helvetica', 'bold');
   doc.text((invoiceData.status || 'draft').charAt(0).toUpperCase() + (invoiceData.status || 'draft').slice(1), 196, metaY, { align: 'right' });
 
-  // Bill To section
+  // Bill To section - dynamic height based on content
   let billY = Math.max(y + 10, metaY + 10);
+
+  // Calculate bill content height first
+  const billFields = [];
+  if (invoiceData.toAddress) billFields.push(invoiceData.toAddress);
+  if (invoiceData.toCity) billFields.push([invoiceData.toCity, invoiceData.toStateZip, invoiceData.toCountry].filter(Boolean).join(', '));
+  if (invoiceData.toEmail) billFields.push(invoiceData.toEmail);
+  if (invoiceData.toPhone) billFields.push(invoiceData.toPhone);
+
+  let billContentHeight = 12; // BILL TO label + name line
+  billFields.forEach(field => {
+    const lines = doc.splitTextToSize(field, 170);
+    billContentHeight += lines.length * 4;
+  });
+
+  const billBoxHeight = Math.max(32, billContentHeight + 8);
+
   doc.setFillColor(...lightGray);
-  doc.roundedRect(14, billY - 5, 182, 28, 2, 2, 'F');
+  doc.roundedRect(14, billY - 5, 182, billBoxHeight, 2, 2, 'F');
   doc.setTextColor(...grayColor);
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
@@ -1841,16 +1973,26 @@ function buildPDF(doc, invoiceData) {
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...grayColor);
   let by = billY + 12;
-  if (invoiceData.toAddress) { doc.text(invoiceData.toAddress, 18, by); by += 4; }
+  if (invoiceData.toAddress) {
+    const addrLines = doc.splitTextToSize(invoiceData.toAddress, 170);
+    doc.text(addrLines, 18, by);
+    by += addrLines.length * 4;
+  }
   if (invoiceData.toCity) {
     const cityLine = [invoiceData.toCity, invoiceData.toStateZip, invoiceData.toCountry].filter(Boolean).join(', ');
-    doc.text(cityLine, 18, by); by += 4;
+    const cityLines = doc.splitTextToSize(cityLine, 170);
+    doc.text(cityLines, 18, by);
+    by += cityLines.length * 4;
   }
-  if (invoiceData.toEmail) { doc.text(invoiceData.toEmail, 18, by); by += 4; }
+  if (invoiceData.toEmail) {
+    const emailLines = doc.splitTextToSize(invoiceData.toEmail, 170);
+    doc.text(emailLines, 18, by);
+    by += emailLines.length * 4;
+  }
   if (invoiceData.toPhone) { doc.text(invoiceData.toPhone, 18, by); by += 4; }
 
   // Items table
-  const startY = Math.max(by + 10, billY + 38);
+  const startY = Math.max(by + 10, billY + billBoxHeight + 5);
   const items = invoiceData.items || [];
   const tableRows = items.map(item => [
     item.description || '',
@@ -1867,22 +2009,23 @@ function buildPDF(doc, invoiceData) {
     theme: 'striped',
     headStyles: {
       fillColor: primaryColor,
-      fontSize: 9,
+      fontSize: 10,
       fontStyle: 'bold',
-      halign: 'left',
-      cellPadding: 3,
+      cellPadding: 4,
     },
     styles: {
       fontSize: 9,
-      cellPadding: 3,
+      cellPadding: 4,
       textColor: darkColor,
+      overflow: 'visible',
+      fontStyle: 'bold',
     },
     columnStyles: {
-      0: { cellWidth: 80 },
-      1: { cellWidth: 20, halign: 'center' },
-      2: { cellWidth: 30, halign: 'right' },
-      3: { cellWidth: 20, halign: 'right' },
-      4: { cellWidth: 32, halign: 'right' },
+      0: { cellWidth: 48, halign: 'left', overflow: 'linebreak', fontStyle: 'normal' },
+      1: { cellWidth: 14, halign: 'center', overflow: 'visible', fontStyle: 'normal' },
+      2: { cellWidth: 52, halign: 'right', overflow: 'visible', fontStyle: 'bold' },
+      3: { cellWidth: 14, halign: 'center', overflow: 'visible', fontStyle: 'normal' },
+      4: { cellWidth: 54, halign: 'right', overflow: 'visible', fontStyle: 'bold' },
     },
     margin: { left: 14, right: 14 },
   });
@@ -1891,51 +2034,57 @@ function buildPDF(doc, invoiceData) {
   let totalY = doc.lastAutoTable.finalY + 10;
   const rightX = 196;
 
-  doc.setFontSize(9);
-  doc.setTextColor(...grayColor);
+  // Totals box on dark background
+  const totalsBoxHeight = 6 + (invoiceData.discountAmount > 0 ? 6 : 0) + (invoiceData.shippingCost > 0 ? 6 : 0) + 6 + 10;
+  doc.setFillColor(...darkColor);
+  doc.roundedRect(120, totalY - 4, 76, totalsBoxHeight, 3, 3, 'F');
+
+  doc.setFontSize(10);
+  doc.setTextColor(...lightTextColor);
   doc.setFont('helvetica', 'normal');
-  doc.text('Subtotal:', 150, totalY);
-  doc.setTextColor(...darkColor);
+  doc.text('Subtotal:', 126, totalY);
+  doc.setTextColor(...whiteColor);
   doc.setFont('helvetica', 'bold');
   doc.text(formatCurrency(invoiceData.subtotal || 0, invoiceData.currency), rightX, totalY, { align: 'right' });
   totalY += 6;
 
   if (invoiceData.discountAmount > 0) {
-    doc.setTextColor(...grayColor);
+    doc.setTextColor(...lightTextColor);
     doc.setFont('helvetica', 'normal');
-    doc.text('Discount:', 150, totalY);
-    doc.setTextColor(220, 38, 38);
+    doc.text('Discount:', 126, totalY);
+    doc.setTextColor(248, 113, 113);
     doc.setFont('helvetica', 'bold');
     doc.text('-' + formatCurrency(invoiceData.discountAmount, invoiceData.currency), rightX, totalY, { align: 'right' });
     totalY += 6;
   }
 
-  doc.setTextColor(...grayColor);
+  doc.setTextColor(...lightTextColor);
   doc.setFont('helvetica', 'normal');
-  doc.text('Tax:', 150, totalY);
-  doc.setTextColor(...darkColor);
+  doc.text('Tax:', 126, totalY);
+  doc.setTextColor(...whiteColor);
   doc.setFont('helvetica', 'bold');
   doc.text(formatCurrency(invoiceData.taxTotal || 0, invoiceData.currency), rightX, totalY, { align: 'right' });
   totalY += 6;
 
   if (invoiceData.shippingCost > 0) {
-    doc.setTextColor(...grayColor);
+    doc.setTextColor(...lightTextColor);
     doc.setFont('helvetica', 'normal');
-    doc.text('Shipping:', 150, totalY);
-    doc.setTextColor(...darkColor);
+    doc.text('Shipping:', 126, totalY);
+    doc.setTextColor(...whiteColor);
     doc.setFont('helvetica', 'bold');
     doc.text(formatCurrency(invoiceData.shippingCost, invoiceData.currency), rightX, totalY, { align: 'right' });
     totalY += 6;
   }
 
-  // Total box
-  doc.setFillColor(...primaryColor);
-  doc.roundedRect(130, totalY - 2, 66, 10, 2, 2, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(11);
+  // Total line
+  doc.setDrawColor(...primaryColor);
+  doc.setLineWidth(0.5);
+  doc.line(126, totalY - 2, 196, totalY - 2);
+  doc.setTextColor(...whiteColor);
+  doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
-  doc.text('Total:', 136, totalY + 5);
-  doc.text(formatCurrency(invoiceData.total || 0, invoiceData.currency), 196, totalY + 5, { align: 'right' });
+  doc.text('Total:', 126, totalY + 5);
+  doc.text(formatCurrency(invoiceData.total || 0, invoiceData.currency), rightX, totalY + 5, { align: 'right' });
 
   // Notes and Terms
   let notesY = totalY + 15;
