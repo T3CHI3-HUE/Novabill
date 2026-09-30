@@ -142,21 +142,39 @@ html, body {
 
   /* Improve invoice table on mobile - card style with edge spacing */
   #invoices-view {
-    padding: 0;
+    padding: 0.5rem 0.75rem;
   }
 
   #invoices-view > .bg-white {
-    margin-left: 0.5rem;
-    margin-right: 0.5rem;
     border: 1px solid #e5e7eb;
-    border-radius: 1rem;
+    border-radius: 0.75rem;
     box-shadow: 0 1px 3px 0 rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+
+  /* Fix header controls: stack search + filter on mobile */
+  #invoices-view .p-3.border-b .flex.items-center {
+    flex-wrap: wrap;
+  }
+
+  #invoices-view .p-3.border-b .flex.items-center .relative {
+    min-width: 100%;
+    max-width: 100%;
+  }
+
+  #invoices-view select#invoice-status-filter {
+    width: auto;
+  }
+
+  /* Hide the column header row on mobile - cards are self-explanatory */
+  #invoices-view table thead {
+    display: none;
   }
 
   /* Add proper spacing around the invoice cards */
   #invoices-view .overflow-x-auto {
     padding: 0.75rem;
-    overflow-x: visible;
+    overflow-x: hidden;
   }
 
   #invoices-table-body tr {
@@ -182,9 +200,7 @@ html, body {
     font-size: 0.8125rem;
   }
 
-  /* Hide Date/Due Date table headers and cells on mobile */
-  #invoices-view table thead th:nth-child(3),
-  #invoices-view table thead th:nth-child(4),
+  /* Hide Date/Due Date headers and cells on mobile */
   #invoices-table-body td:nth-child(3),
   #invoices-table-body td:nth-child(4) {
     display: none;

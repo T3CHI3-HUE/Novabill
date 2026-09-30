@@ -1356,8 +1356,8 @@ function renderInvoiceHTML(inv) {
         </div>
       </div>
 
-      <!-- Items Table -->
-      <div class="px-4 sm:px-8 py-4 sm:py-6 overflow-x-auto">
+      <!-- Items Table (desktop only) -->
+      <div class="px-4 sm:px-8 py-4 sm:py-6 overflow-x-auto hidden sm:block">
         <table class="w-full text-sm table-fixed min-w-[480px]">
           <thead>
             <tr class="bg-gray-50 text-gray-500">
@@ -1611,17 +1611,17 @@ function generatePDF() {
       },
       styles: {
         fontSize: 9,
-        cellPadding: 4,
+        cellPadding: 3,
         textColor: darkColor,
-        overflow: 'visible',
-        fontStyle: 'bold',
+        overflow: 'linebreak',
+        fontStyle: 'normal',
       },
       columnStyles: {
-        0: { cellWidth: 48, halign: 'left', overflow: 'linebreak', fontStyle: 'normal' },
-        1: { cellWidth: 14, halign: 'center', overflow: 'visible', fontStyle: 'normal' },
-        2: { cellWidth: 52, halign: 'right', overflow: 'visible', fontStyle: 'bold' },
-        3: { cellWidth: 14, halign: 'center', overflow: 'visible', fontStyle: 'normal' },
-        4: { cellWidth: 54, halign: 'right', overflow: 'visible', fontStyle: 'bold' },
+        0: { cellWidth: 40, halign: 'left' },
+        1: { cellWidth: 14, halign: 'center' },
+        2: { cellWidth: 58, halign: 'right', fontStyle: 'bold' },
+        3: { cellWidth: 12, halign: 'center' },
+        4: { cellWidth: 58, halign: 'right', fontStyle: 'bold' },
       },
       margin: { left: 14, right: 14 },
     });
@@ -1630,10 +1630,10 @@ function generatePDF() {
     let totalY = doc.lastAutoTable.finalY + 10;
     const rightX = 196;
 
-    // Totals box on dark background
-    const totalsBoxHeight = 6 + (invoiceData.discountAmount > 0 ? 6 : 0) + (invoiceData.shippingCost > 0 ? 6 : 0) + 6 + 10;
+    // Totals box on dark background - sized to fit all rows incl. larger Total font
+    const totalsBoxHeight = 34 + (invoiceData.discountAmount > 0 ? 8 : 0) + (invoiceData.shippingCost > 0 ? 8 : 0);
     doc.setFillColor(...darkColor);
-    doc.roundedRect(120, totalY - 4, 76, totalsBoxHeight, 3, 3, 'F');
+    doc.roundedRect(120, totalY - 8, 76, totalsBoxHeight, 3, 3, 'F');
 
     doc.setFontSize(10);
     doc.setTextColor(...lightTextColor);
@@ -2015,17 +2015,17 @@ function buildPDF(doc, invoiceData) {
     },
     styles: {
       fontSize: 9,
-      cellPadding: 4,
+      cellPadding: 3,
       textColor: darkColor,
-      overflow: 'visible',
-      fontStyle: 'bold',
+      overflow: 'linebreak',
+      fontStyle: 'normal',
     },
     columnStyles: {
-      0: { cellWidth: 48, halign: 'left', overflow: 'linebreak', fontStyle: 'normal' },
-      1: { cellWidth: 14, halign: 'center', overflow: 'visible', fontStyle: 'normal' },
-      2: { cellWidth: 52, halign: 'right', overflow: 'visible', fontStyle: 'bold' },
-      3: { cellWidth: 14, halign: 'center', overflow: 'visible', fontStyle: 'normal' },
-      4: { cellWidth: 54, halign: 'right', overflow: 'visible', fontStyle: 'bold' },
+      0: { cellWidth: 40, halign: 'left' },
+      1: { cellWidth: 14, halign: 'center' },
+      2: { cellWidth: 58, halign: 'right', fontStyle: 'bold' },
+      3: { cellWidth: 12, halign: 'center' },
+      4: { cellWidth: 58, halign: 'right', fontStyle: 'bold' },
     },
     margin: { left: 14, right: 14 },
   });
@@ -2034,10 +2034,10 @@ function buildPDF(doc, invoiceData) {
   let totalY = doc.lastAutoTable.finalY + 10;
   const rightX = 196;
 
-  // Totals box on dark background
-  const totalsBoxHeight = 6 + (invoiceData.discountAmount > 0 ? 6 : 0) + (invoiceData.shippingCost > 0 ? 6 : 0) + 6 + 10;
+  // Totals box on dark background - sized to fit all rows incl. larger Total font
+  const totalsBoxHeight = 34 + (invoiceData.discountAmount > 0 ? 8 : 0) + (invoiceData.shippingCost > 0 ? 8 : 0);
   doc.setFillColor(...darkColor);
-  doc.roundedRect(120, totalY - 4, 76, totalsBoxHeight, 3, 3, 'F');
+  doc.roundedRect(120, totalY - 8, 76, totalsBoxHeight, 3, 3, 'F');
 
   doc.setFontSize(10);
   doc.setTextColor(...lightTextColor);
