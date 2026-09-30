@@ -140,13 +140,36 @@ html, body {
     justify-content: center;
   }
 
-  /* Improve invoice table on mobile - card style */
+  /* Improve invoice table on mobile - card style with edge spacing */
+  #invoices-view {
+    padding: 0;
+  }
+
+  #invoices-view > .bg-white {
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px 0 rgba(0,0,0,0.08);
+  }
+
+  /* Add proper spacing around the invoice cards */
+  #invoices-view .overflow-x-auto {
+    padding: 0.75rem;
+    overflow-x: visible;
+  }
+
   #invoices-table-body tr {
     display: block;
     border: 1px solid #f3f4f6;
     border-radius: 0.75rem;
     margin-bottom: 0.75rem;
     padding: 0.75rem;
+    box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
+  }
+
+  #invoices-table-body tr:last-child {
+    margin-bottom: 0;
   }
 
   #invoices-table-body td {
