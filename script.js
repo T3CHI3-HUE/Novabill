@@ -83,7 +83,7 @@ function initFirebase() {
           createdAt: nowTimestamp()
         };
         db.users.push(userData);
-        // Create default settings
+        // Create default settings with prototype payment account details
         db.settings.push({
           id: generateId(),
           userId: user.uid,
@@ -95,6 +95,11 @@ function initFirebase() {
           companyStateZip: '',
           companyCountry: '',
           currency: 'USD',
+          accountHolder: 'Evolution p+w',
+          bankName1: 'Providus',
+          accountNumber1: '1306897503',
+          bankName2: 'United Bank of Africa',
+          accountNumber2: '1021788922',
           createdAt: nowTimestamp()
         });
         saveDB(db);
@@ -377,6 +382,35 @@ async function loadSettings() {
     const settings = db.settings.filter(s => s.userId === currentUser.id);
     if (settings.length > 0) {
       userSettings = settings[0];
+      // Backfill default account details for existing users who don't have them yet
+      let needsUpdate = false;
+      if (!userSettings.accountHolder) {
+        userSettings.accountHolder = 'Evolution p+w';
+        needsUpdate = true;
+      }
+      if (!userSettings.bankName1) {
+        userSettings.bankName1 = 'Providus';
+        needsUpdate = true;
+      }
+      if (!userSettings.accountNumber1) {
+        userSettings.accountNumber1 = '1306897503';
+        needsUpdate = true;
+      }
+      if (!userSettings.bankName2) {
+        userSettings.bankName2 = 'United Bank of Africa';
+        needsUpdate = true;
+      }
+      if (!userSettings.accountNumber2) {
+        userSettings.accountNumber2 = '1021788922';
+        needsUpdate = true;
+      }
+      if (needsUpdate) {
+        const idx = db.settings.findIndex(s => s.id === userSettings.id);
+        if (idx >= 0) {
+          db.settings[idx] = { ...db.settings[idx], ...userSettings };
+          saveDB(db);
+        }
+      }
     } else {
       userSettings = null;
     }
@@ -1197,6 +1231,11 @@ function loadSettingsIntoForm() {
   document.getElementById('settings-company-state-zip').value = userSettings.companyStateZip || '';
   document.getElementById('settings-company-country').value = userSettings.companyCountry || '';
   document.getElementById('settings-currency').value = userSettings.currency || 'USD';
+  document.getElementById('settings-account-holder').value = userSettings.accountHolder || '';
+  document.getElementById('settings-bank-name-1').value = userSettings.bankName1 || '';
+  document.getElementById('settings-account-number-1').value = userSettings.accountNumber1 || '';
+  document.getElementById('settings-bank-name-2').value = userSettings.bankName2 || '';
+  document.getElementById('settings-account-number-2').value = userSettings.accountNumber2 || '';
 }
 
 function loadSettingsIntoEditor() {
@@ -1224,6 +1263,11 @@ async function saveSettings() {
     companyStateZip: document.getElementById('settings-company-state-zip').value.trim(),
     companyCountry: document.getElementById('settings-company-country').value.trim(),
     currency: document.getElementById('settings-currency').value,
+    accountHolder: document.getElementById('settings-account-holder').value.trim(),
+    bankName1: document.getElementById('settings-bank-name-1').value.trim(),
+    accountNumber1: document.getElementById('settings-account-number-1').value.trim(),
+    bankName2: document.getElementById('settings-bank-name-2').value.trim(),
+    accountNumber2: document.getElementById('settings-account-number-2').value.trim(),
     updatedAt: nowTimestamp()
   };
 
@@ -1310,13 +1354,21 @@ function renderInvoiceHTML(inv) {
   };
   const statusColor = statusColors[inv.status] || 'bg-gray-100 text-gray-600';
 
+  // Get user's payment account details from settings
+  const accountHolder = userSettings?.accountHolder || 'Evolution p+w';
+  const bankName1 = userSettings?.bankName1 || 'Providus';
+  const accountNumber1 = userSettings?.accountNumber1 || '1306897503';
+  const bankName2 = userSettings?.bankName2 || 'United Bank of Africa';
+  const accountNumber2 = userSettings?.accountNumber2 || '1021788922';
+  const hasSecondAccount = bankName2 && accountNumber2;
+
   const itemsRows = (inv.items || []).map(item => `
     <tr class="border-b border-gray-100">
       <td class="p-3 text-left break-words font-medium">${escapeHtml(item.description || '')}</td>
       <td class="p-3 text-center font-medium">${item.quantity || 0}</td>
-      <td class="p-3 text-right whitespace-nowrap font-bold text-gray-900">${formatCurrency(item.unitPrice || 0, currency)}</td>
+      <td class="p-3 text-center whitespace-nowrap font-bold text-gray-900">${formatCurrency(item.unitPrice || 0, currency)}</td>
       <td class="p-3 text-center font-medium">${item.taxRate || 0}%</td>
-      <td class="p-3 text-right font-bold text-gray-900 whitespace-nowrap">${formatCurrency(item.total || 0, currency)}</td>
+      <td class="p-3 text-center font-bold text-gray-900 whitespace-nowrap">${formatCurrency(item.total || 0, currency)}</td>
     </tr>
   `).join('');
 
@@ -1360,12 +1412,12 @@ function renderInvoiceHTML(inv) {
       <div class="px-4 sm:px-8 py-4 sm:py-6 overflow-x-auto hidden sm:block">
         <table class="w-full text-sm table-fixed min-w-[480px]">
           <thead>
-            <tr class="bg-gray-50 text-gray-500">
-              <th class="p-3 font-semibold text-left w-[28%]">Description</th>
-              <th class="p-3 font-semibold text-center w-[7%]">Qty</th>
-              <th class="p-3 font-semibold text-right w-[27%]">Unit Price</th>
-              <th class="p-3 font-semibold text-center w-[7%]">Tax</th>
-              <th class="p-3 font-semibold text-right w-[31%]">Amount</th>
+            <tr class="bg-gray-900 text-white">
+              <th class="p-3 font-semibold text-left w-[24%]">Description</th>
+              <th class="p-3 font-semibold text-center w-[10%]">Qty</th>
+              <th class="p-3 font-semibold text-center w-[25%]">Unit Price</th>
+              <th class="p-3 font-semibold text-center w-[12%]">Tax</th>
+              <th class="p-3 font-semibold text-center w-[29%]">Amount</th>
             </tr>
           </thead>
           <tbody>
@@ -1406,42 +1458,51 @@ function renderInvoiceHTML(inv) {
       <!-- Totals -->
       <div class="px-5 sm:px-8 pb-5 sm:pb-8">
         <div class="bg-gray-900 rounded-lg p-5 ml-auto w-72 space-y-2">
-          <div class="flex justify-between text-sm">
+          <div class="flex items-center justify-center gap-2 text-sm">
             <span class="text-gray-300">Subtotal</span>
             <span class="font-medium text-white">${formatCurrency(inv.subtotal || 0, currency)}</span>
           </div>
           ${inv.discountAmount > 0 ? `
-          <div class="flex justify-between text-sm">
+          <div class="flex items-center justify-center gap-2 text-sm">
             <span class="text-gray-300">Discount (${inv.discountType === 'percentage' ? inv.discountValue + '%' : formatCurrency(inv.discountValue, currency)})</span>
             <span class="font-medium text-red-400">-${formatCurrency(inv.discountAmount, currency)}</span>
           </div>` : ''}
-          <div class="flex justify-between text-sm">
+          <div class="flex items-center justify-center gap-2 text-sm">
             <span class="text-gray-300">Tax</span>
             <span class="font-medium text-white">${formatCurrency(inv.taxTotal || 0, currency)}</span>
           </div>
           ${inv.shippingCost > 0 ? `
-          <div class="flex justify-between text-sm">
+          <div class="flex items-center justify-center gap-2 text-sm">
             <span class="text-gray-300">Shipping</span>
             <span class="font-medium text-white">${formatCurrency(inv.shippingCost, currency)}</span>
           </div>` : ''}
-          <div class="flex justify-between border-t border-gray-700 pt-2">
+          <div class="flex items-center justify-center gap-2 border-t border-gray-700 pt-2">
             <span class="font-bold text-white">Total</span>
             <span class="text-xl font-bold text-white">${formatCurrency(inv.total || 0, currency)}</span>
           </div>
         </div>
       </div>
 
-      <!-- Notes & Terms -->
+      <!-- Notes -->
       ${inv.notes ? `
       <div class="px-5 sm:px-8 pb-4 sm:pb-6">
         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Notes</p>
         <p class="text-sm text-gray-600 whitespace-pre-line">${escapeHtml(inv.notes)}</p>
       </div>` : ''}
-      ${inv.terms ? `
-      <div class="px-5 sm:px-8 pb-5 sm:pb-8">
-        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Terms & Conditions</p>
-        <p class="text-sm text-gray-600 whitespace-pre-line">${escapeHtml(inv.terms)}</p>
-      </div>` : ''}
+
+    </div>
+
+    <!-- Footer with Payment Details -->
+    <div class="bg-gray-900 px-5 sm:px-8 py-4">
+      <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Payment Details</p>
+      <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <p class="text-sm text-gray-300"><span class="font-semibold text-white">Account Holder:</span> ${escapeHtml(accountHolder)}</p>
+        <p class="text-sm text-gray-300"><span class="font-semibold text-white">Bank:</span> ${escapeHtml(bankName1)}</p>
+        <p class="text-sm text-gray-300"><span class="font-semibold text-white">Account No:</span> ${escapeHtml(accountNumber1)}</p>
+        ${hasSecondAccount ? `
+        <p class="text-sm text-gray-300"><span class="font-semibold text-white">Bank:</span> ${escapeHtml(bankName2)}</p>
+        <p class="text-sm text-gray-300"><span class="font-semibold text-white">Account No:</span> ${escapeHtml(accountNumber2)}</p>` : ''}
+      </div>
     </div>
   `;
 }
@@ -1467,25 +1528,25 @@ function generatePDF() {
     const lightTextColor = [243, 244, 246]; // gray-100 for dark backgrounds
 
     // Header
-    const headerHeight = 55;
+    const headerHeight = 75;
     doc.setFillColor(...darkColor);
     doc.rect(0, 0, 210, headerHeight, 'F');
     doc.setTextColor(...whiteColor);
-    doc.setFontSize(22);
+    doc.setFontSize(24);
     doc.setFont('helvetica', 'bold');
     doc.text('INVOICE', 14, 16);
 
-    doc.setFontSize(10);
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
     doc.text(invoiceData.number || '', 196, 16, { align: 'right' });
 
     // Company info (on dark header - use light text, wrap within header)
     doc.setTextColor(...whiteColor);
-    doc.setFontSize(12);
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.text(invoiceData.fromName || 'Your Company', 14, 30);
 
-    doc.setFontSize(9);
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...lightTextColor);
 
@@ -1493,24 +1554,24 @@ function generatePDF() {
     if (invoiceData.fromAddress) {
       const addrLines = doc.splitTextToSize(invoiceData.fromAddress, 120);
       doc.text(addrLines, 14, y);
-      y += addrLines.length * 4;
+      y += addrLines.length * 5;
     }
     if (invoiceData.fromCity) {
       const cityLine = [invoiceData.fromCity, invoiceData.fromStateZip, invoiceData.fromCountry].filter(Boolean).join(', ');
       const cityLines = doc.splitTextToSize(cityLine, 120);
       doc.text(cityLines, 14, y);
-      y += cityLines.length * 4;
+      y += cityLines.length * 5;
     }
     if (invoiceData.fromEmail) {
       const emailLines = doc.splitTextToSize(invoiceData.fromEmail, 120);
       doc.text(emailLines, 14, y);
-      y += emailLines.length * 4;
+      y += emailLines.length * 5;
     }
-    if (invoiceData.fromPhone) { doc.text(invoiceData.fromPhone, 14, y); y += 4; }
+    if (invoiceData.fromPhone) { doc.text(invoiceData.fromPhone, 14, y); y += 5; }
 
     // Invoice meta (right side) - on dark header use light text
     let metaY = 30;
-    doc.setFontSize(9);
+    doc.setFontSize(11);
     doc.setTextColor(...lightTextColor);
     doc.setFont('helvetica', 'normal');
 
@@ -1518,7 +1579,7 @@ function generatePDF() {
     doc.setTextColor(...whiteColor);
     doc.setFont('helvetica', 'bold');
     doc.text(invoiceData.date ? formatDate(invoiceData.date) : '—', 196, metaY, { align: 'right' });
-    metaY += 5;
+    metaY += 6;
 
     doc.setTextColor(...lightTextColor);
     doc.setFont('helvetica', 'normal');
@@ -1526,7 +1587,7 @@ function generatePDF() {
     doc.setTextColor(...whiteColor);
     doc.setFont('helvetica', 'bold');
     doc.text(invoiceData.dueDate ? formatDate(invoiceData.dueDate) : '—', 196, metaY, { align: 'right' });
-    metaY += 5;
+    metaY += 6;
 
     doc.setTextColor(...lightTextColor);
     doc.setFont('helvetica', 'normal');
@@ -1536,7 +1597,7 @@ function generatePDF() {
     doc.text((invoiceData.status || 'draft').charAt(0).toUpperCase() + (invoiceData.status || 'draft').slice(1), 196, metaY, { align: 'right' });
 
     // Bill To section - dynamic height based on content
-    let billY = Math.max(y + 10, metaY + 10);
+    let billY = Math.max(y + 15, metaY + 15, headerHeight + 10);
 
     // Calculate bill content height first
     const billFields = [];
@@ -1548,7 +1609,7 @@ function generatePDF() {
     let billContentHeight = 12; // BILL TO label + name line
     billFields.forEach(field => {
       const lines = doc.splitTextToSize(field, 170);
-      billContentHeight += lines.length * 4;
+      billContentHeight += lines.length * 5;
     });
 
     const billBoxHeight = Math.max(32, billContentHeight + 8);
@@ -1556,36 +1617,36 @@ function generatePDF() {
     doc.setFillColor(...lightGray);
     doc.roundedRect(14, billY - 5, 182, billBoxHeight, 2, 2, 'F');
     doc.setTextColor(...grayColor);
-    doc.setFontSize(8);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.text('BILL TO', 18, billY);
 
     doc.setTextColor(...darkColor);
-    doc.setFontSize(11);
+    doc.setFontSize(13);
     doc.setFont('helvetica', 'bold');
-    doc.text(invoiceData.toName || '', 18, billY + 7);
+    doc.text(invoiceData.toName || '', 18, billY + 8);
 
-    doc.setFontSize(9);
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...grayColor);
-    let by = billY + 12;
+    let by = billY + 14;
     if (invoiceData.toAddress) {
       const addrLines = doc.splitTextToSize(invoiceData.toAddress, 170);
       doc.text(addrLines, 18, by);
-      by += addrLines.length * 4;
+      by += addrLines.length * 5;
     }
     if (invoiceData.toCity) {
       const cityLine = [invoiceData.toCity, invoiceData.toStateZip, invoiceData.toCountry].filter(Boolean).join(', ');
       const cityLines = doc.splitTextToSize(cityLine, 170);
       doc.text(cityLines, 18, by);
-      by += cityLines.length * 4;
+      by += cityLines.length * 5;
     }
     if (invoiceData.toEmail) {
       const emailLines = doc.splitTextToSize(invoiceData.toEmail, 170);
       doc.text(emailLines, 18, by);
-      by += emailLines.length * 4;
+      by += emailLines.length * 5;
     }
-    if (invoiceData.toPhone) { doc.text(invoiceData.toPhone, 18, by); by += 4; }
+    if (invoiceData.toPhone) { doc.text(invoiceData.toPhone, 18, by); by += 5; }
 
     // Items table
     const startY = Math.max(by + 10, billY + billBoxHeight + 5);
@@ -1605,23 +1666,24 @@ function generatePDF() {
       theme: 'striped',
       headStyles: {
         fillColor: primaryColor,
-        fontSize: 10,
+        textColor: [255, 255, 255],
+        fontSize: 12,
         fontStyle: 'bold',
         cellPadding: 4,
       },
       styles: {
-        fontSize: 9,
+        fontSize: 11,
         cellPadding: 3,
         textColor: darkColor,
         overflow: 'linebreak',
         fontStyle: 'normal',
       },
       columnStyles: {
-        0: { cellWidth: 40, halign: 'left' },
-        1: { cellWidth: 14, halign: 'center' },
-        2: { cellWidth: 58, halign: 'right', fontStyle: 'bold' },
-        3: { cellWidth: 12, halign: 'center' },
-        4: { cellWidth: 58, halign: 'right', fontStyle: 'bold' },
+        0: { cellWidth: 34, halign: 'left' },
+        1: { cellWidth: 16, halign: 'center' },
+        2: { cellWidth: 54, halign: 'center', fontStyle: 'bold' },
+        3: { cellWidth: 20, halign: 'center' },
+        4: { cellWidth: 58, halign: 'center', fontStyle: 'bold' },
       },
       margin: { left: 14, right: 14 },
     });
@@ -1635,13 +1697,13 @@ function generatePDF() {
     doc.setFillColor(...darkColor);
     doc.roundedRect(120, totalY - 8, 76, totalsBoxHeight, 3, 3, 'F');
 
-    doc.setFontSize(10);
+    doc.setFontSize(12);
     doc.setTextColor(...lightTextColor);
     doc.setFont('helvetica', 'normal');
     doc.text('Subtotal:', 126, totalY);
     doc.setTextColor(...whiteColor);
     doc.setFont('helvetica', 'bold');
-    doc.text(formatCurrency(invoiceData.subtotal || 0, invoiceData.currency), rightX, totalY, { align: 'right' });
+    doc.text(formatCurrency(invoiceData.subtotal || 0, invoiceData.currency), 158, totalY, { align: 'center' });
     totalY += 6;
 
     if (invoiceData.discountAmount > 0) {
@@ -1650,7 +1712,7 @@ function generatePDF() {
       doc.text('Discount:', 126, totalY);
       doc.setTextColor(248, 113, 113);
       doc.setFont('helvetica', 'bold');
-      doc.text('-' + formatCurrency(invoiceData.discountAmount, invoiceData.currency), rightX, totalY, { align: 'right' });
+      doc.text('-' + formatCurrency(invoiceData.discountAmount, invoiceData.currency), 158, totalY, { align: 'center' });
       totalY += 6;
     }
 
@@ -1659,7 +1721,7 @@ function generatePDF() {
     doc.text('Tax:', 126, totalY);
     doc.setTextColor(...whiteColor);
     doc.setFont('helvetica', 'bold');
-    doc.text(formatCurrency(invoiceData.taxTotal || 0, invoiceData.currency), rightX, totalY, { align: 'right' });
+    doc.text(formatCurrency(invoiceData.taxTotal || 0, invoiceData.currency), 158, totalY, { align: 'center' });
     totalY += 6;
 
     if (invoiceData.shippingCost > 0) {
@@ -1668,55 +1730,71 @@ function generatePDF() {
       doc.text('Shipping:', 126, totalY);
       doc.setTextColor(...whiteColor);
       doc.setFont('helvetica', 'bold');
-      doc.text(formatCurrency(invoiceData.shippingCost, invoiceData.currency), rightX, totalY, { align: 'right' });
+      doc.text(formatCurrency(invoiceData.shippingCost, invoiceData.currency), 158, totalY, { align: 'center' });
       totalY += 6;
     }
 
     // Total line
     doc.setDrawColor(...primaryColor);
     doc.setLineWidth(0.5);
-    doc.line(126, totalY - 2, 196, totalY - 2);
+    doc.line(126, totalY - 2, 190, totalY - 2);
     doc.setTextColor(...whiteColor);
-    doc.setFontSize(13);
+    doc.setFontSize(15);
     doc.setFont('helvetica', 'bold');
     doc.text('Total:', 126, totalY + 5);
-    doc.text(formatCurrency(invoiceData.total || 0, invoiceData.currency), rightX, totalY + 5, { align: 'right' });
+    doc.text(formatCurrency(invoiceData.total || 0, invoiceData.currency), 158, totalY + 5, { align: 'center' });
 
     // Notes and Terms
     let notesY = totalY + 15;
     if (invoiceData.notes) {
       doc.setTextColor(...grayColor);
-      doc.setFontSize(8);
+      doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
       doc.text('NOTES', 14, notesY);
       notesY += 5;
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
+      doc.setFontSize(11);
       doc.setTextColor(...darkColor);
       const notesLines = doc.splitTextToSize(invoiceData.notes, 182);
       doc.text(notesLines, 14, notesY);
       notesY += notesLines.length * 4 + 5;
     }
 
-    if (invoiceData.terms) {
-      doc.setTextColor(...grayColor);
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'bold');
-      doc.text('TERMS & CONDITIONS', 14, notesY);
-      notesY += 5;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(...darkColor);
-      const termsLines = doc.splitTextToSize(invoiceData.terms, 182);
-      doc.text(termsLines, 14, notesY);
-    }
-
-    // Footer
+    // Footer with Payment Details (replaces "Generated with InvoiceGen")
     const pageHeight = doc.internal.pageSize.getHeight();
-    doc.setFontSize(8);
-    doc.setTextColor(...grayColor);
+    const footerY = pageHeight - 30;
+
+    // Dark footer background
+    doc.setFillColor(...darkColor);
+    doc.rect(0, footerY - 8, 210, 38, 'F');
+
+    doc.setTextColor(...lightTextColor);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PAYMENT DETAILS', 14, footerY);
+
     doc.setFont('helvetica', 'normal');
-    doc.text('Generated with InvoiceGen', 105, pageHeight - 8, { align: 'center' });
+    doc.setFontSize(10);
+    doc.setTextColor(...whiteColor);
+
+    // Get user's payment account details from settings
+    const accountHolder = userSettings?.accountHolder || 'Evolution p+w';
+    const bankName1 = userSettings?.bankName1 || 'Providus';
+    const accountNumber1 = userSettings?.accountNumber1 || '1306897503';
+    const bankName2 = userSettings?.bankName2 || 'United Bank of Africa';
+    const accountNumber2 = userSettings?.accountNumber2 || '1021788922';
+    const hasSecondAccount = bankName2 && accountNumber2;
+
+    // Left column - Account 1
+    doc.text(`Account Holder: ${accountHolder}`, 14, footerY + 6);
+    doc.text(`Bank: ${bankName1}`, 14, footerY + 11);
+    doc.text(`Account No: ${accountNumber1}`, 14, footerY + 16);
+
+    // Right column - Account 2 (if provided)
+    if (hasSecondAccount) {
+      doc.text(`Bank: ${bankName2}`, 110, footerY + 6);
+      doc.text(`Account No: ${accountNumber2}`, 110, footerY + 11);
+    }
 
     // Save PDF
     const fileName = `${invoiceData.number || 'invoice'}.pdf`;
@@ -1871,25 +1949,25 @@ function buildPDF(doc, invoiceData) {
   const lightTextColor = [243, 244, 246]; // gray-100 for dark backgrounds
 
   // Header
-  const headerHeight = 55;
+  const headerHeight = 75;
   doc.setFillColor(...darkColor);
   doc.rect(0, 0, 210, headerHeight, 'F');
   doc.setTextColor(...whiteColor);
-  doc.setFontSize(22);
+  doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
   doc.text('INVOICE', 14, 16);
 
-  doc.setFontSize(10);
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'normal');
   doc.text(invoiceData.number || '', 196, 16, { align: 'right' });
 
   // Company info (on dark header - use light text, wrap within header)
   doc.setTextColor(...whiteColor);
-  doc.setFontSize(12);
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.text(invoiceData.fromName || 'Your Company', 14, 30);
 
-  doc.setFontSize(9);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...lightTextColor);
 
@@ -1897,24 +1975,24 @@ function buildPDF(doc, invoiceData) {
   if (invoiceData.fromAddress) {
     const addrLines = doc.splitTextToSize(invoiceData.fromAddress, 120);
     doc.text(addrLines, 14, y);
-    y += addrLines.length * 4;
+    y += addrLines.length * 5;
   }
   if (invoiceData.fromCity) {
     const cityLine = [invoiceData.fromCity, invoiceData.fromStateZip, invoiceData.fromCountry].filter(Boolean).join(', ');
     const cityLines = doc.splitTextToSize(cityLine, 120);
     doc.text(cityLines, 14, y);
-    y += cityLines.length * 4;
+    y += cityLines.length * 5;
   }
   if (invoiceData.fromEmail) {
     const emailLines = doc.splitTextToSize(invoiceData.fromEmail, 120);
     doc.text(emailLines, 14, y);
-    y += emailLines.length * 4;
+    y += emailLines.length * 5;
   }
-  if (invoiceData.fromPhone) { doc.text(invoiceData.fromPhone, 14, y); y += 4; }
+  if (invoiceData.fromPhone) { doc.text(invoiceData.fromPhone, 14, y); y += 5; }
 
   // Invoice meta (right side) - on dark header use light text
   let metaY = 30;
-  doc.setFontSize(9);
+  doc.setFontSize(11);
   doc.setTextColor(...lightTextColor);
   doc.setFont('helvetica', 'normal');
 
@@ -1922,7 +2000,7 @@ function buildPDF(doc, invoiceData) {
   doc.setTextColor(...whiteColor);
   doc.setFont('helvetica', 'bold');
   doc.text(invoiceData.date ? formatDate(invoiceData.date) : '—', 196, metaY, { align: 'right' });
-  metaY += 5;
+  metaY += 6;
 
   doc.setTextColor(...lightTextColor);
   doc.setFont('helvetica', 'normal');
@@ -1930,7 +2008,7 @@ function buildPDF(doc, invoiceData) {
   doc.setTextColor(...whiteColor);
   doc.setFont('helvetica', 'bold');
   doc.text(invoiceData.dueDate ? formatDate(invoiceData.dueDate) : '—', 196, metaY, { align: 'right' });
-  metaY += 5;
+  metaY += 6;
 
   doc.setTextColor(...lightTextColor);
   doc.setFont('helvetica', 'normal');
@@ -1940,7 +2018,7 @@ function buildPDF(doc, invoiceData) {
   doc.text((invoiceData.status || 'draft').charAt(0).toUpperCase() + (invoiceData.status || 'draft').slice(1), 196, metaY, { align: 'right' });
 
   // Bill To section - dynamic height based on content
-  let billY = Math.max(y + 10, metaY + 10);
+  let billY = Math.max(y + 15, metaY + 15, headerHeight + 10);
 
   // Calculate bill content height first
   const billFields = [];
@@ -1952,7 +2030,7 @@ function buildPDF(doc, invoiceData) {
   let billContentHeight = 12; // BILL TO label + name line
   billFields.forEach(field => {
     const lines = doc.splitTextToSize(field, 170);
-    billContentHeight += lines.length * 4;
+    billContentHeight += lines.length * 5;
   });
 
   const billBoxHeight = Math.max(32, billContentHeight + 8);
@@ -1960,36 +2038,36 @@ function buildPDF(doc, invoiceData) {
   doc.setFillColor(...lightGray);
   doc.roundedRect(14, billY - 5, 182, billBoxHeight, 2, 2, 'F');
   doc.setTextColor(...grayColor);
-  doc.setFontSize(8);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.text('BILL TO', 18, billY);
 
   doc.setTextColor(...darkColor);
-  doc.setFontSize(11);
+  doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
-  doc.text(invoiceData.toName || '', 18, billY + 7);
+  doc.text(invoiceData.toName || '', 18, billY + 8);
 
-  doc.setFontSize(9);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...grayColor);
-  let by = billY + 12;
+  let by = billY + 14;
   if (invoiceData.toAddress) {
     const addrLines = doc.splitTextToSize(invoiceData.toAddress, 170);
     doc.text(addrLines, 18, by);
-    by += addrLines.length * 4;
+    by += addrLines.length * 5;
   }
   if (invoiceData.toCity) {
     const cityLine = [invoiceData.toCity, invoiceData.toStateZip, invoiceData.toCountry].filter(Boolean).join(', ');
     const cityLines = doc.splitTextToSize(cityLine, 170);
     doc.text(cityLines, 18, by);
-    by += cityLines.length * 4;
+    by += cityLines.length * 5;
   }
   if (invoiceData.toEmail) {
     const emailLines = doc.splitTextToSize(invoiceData.toEmail, 170);
     doc.text(emailLines, 18, by);
-    by += emailLines.length * 4;
+    by += emailLines.length * 5;
   }
-  if (invoiceData.toPhone) { doc.text(invoiceData.toPhone, 18, by); by += 4; }
+  if (invoiceData.toPhone) { doc.text(invoiceData.toPhone, 18, by); by += 5; }
 
   // Items table
   const startY = Math.max(by + 10, billY + billBoxHeight + 5);
@@ -2009,23 +2087,24 @@ function buildPDF(doc, invoiceData) {
     theme: 'striped',
     headStyles: {
       fillColor: primaryColor,
-      fontSize: 10,
+      textColor: [255, 255, 255],
+      fontSize: 12,
       fontStyle: 'bold',
       cellPadding: 4,
     },
     styles: {
-      fontSize: 9,
+      fontSize: 11,
       cellPadding: 3,
       textColor: darkColor,
       overflow: 'linebreak',
       fontStyle: 'normal',
     },
     columnStyles: {
-      0: { cellWidth: 40, halign: 'left' },
-      1: { cellWidth: 14, halign: 'center' },
-      2: { cellWidth: 58, halign: 'right', fontStyle: 'bold' },
-      3: { cellWidth: 12, halign: 'center' },
-      4: { cellWidth: 58, halign: 'right', fontStyle: 'bold' },
+      0: { cellWidth: 34, halign: 'left' },
+      1: { cellWidth: 16, halign: 'center' },
+      2: { cellWidth: 54, halign: 'center', fontStyle: 'bold' },
+      3: { cellWidth: 20, halign: 'center' },
+      4: { cellWidth: 58, halign: 'center', fontStyle: 'bold' },
     },
     margin: { left: 14, right: 14 },
   });
@@ -2039,13 +2118,13 @@ function buildPDF(doc, invoiceData) {
   doc.setFillColor(...darkColor);
   doc.roundedRect(120, totalY - 8, 76, totalsBoxHeight, 3, 3, 'F');
 
-  doc.setFontSize(10);
+  doc.setFontSize(12);
   doc.setTextColor(...lightTextColor);
   doc.setFont('helvetica', 'normal');
   doc.text('Subtotal:', 126, totalY);
   doc.setTextColor(...whiteColor);
   doc.setFont('helvetica', 'bold');
-  doc.text(formatCurrency(invoiceData.subtotal || 0, invoiceData.currency), rightX, totalY, { align: 'right' });
+  doc.text(formatCurrency(invoiceData.subtotal || 0, invoiceData.currency), 158, totalY, { align: 'center' });
   totalY += 6;
 
   if (invoiceData.discountAmount > 0) {
@@ -2054,7 +2133,7 @@ function buildPDF(doc, invoiceData) {
     doc.text('Discount:', 126, totalY);
     doc.setTextColor(248, 113, 113);
     doc.setFont('helvetica', 'bold');
-    doc.text('-' + formatCurrency(invoiceData.discountAmount, invoiceData.currency), rightX, totalY, { align: 'right' });
+    doc.text('-' + formatCurrency(invoiceData.discountAmount, invoiceData.currency), 158, totalY, { align: 'center' });
     totalY += 6;
   }
 
@@ -2063,7 +2142,7 @@ function buildPDF(doc, invoiceData) {
   doc.text('Tax:', 126, totalY);
   doc.setTextColor(...whiteColor);
   doc.setFont('helvetica', 'bold');
-  doc.text(formatCurrency(invoiceData.taxTotal || 0, invoiceData.currency), rightX, totalY, { align: 'right' });
+  doc.text(formatCurrency(invoiceData.taxTotal || 0, invoiceData.currency), 158, totalY, { align: 'center' });
   totalY += 6;
 
   if (invoiceData.shippingCost > 0) {
@@ -2072,55 +2151,71 @@ function buildPDF(doc, invoiceData) {
     doc.text('Shipping:', 126, totalY);
     doc.setTextColor(...whiteColor);
     doc.setFont('helvetica', 'bold');
-    doc.text(formatCurrency(invoiceData.shippingCost, invoiceData.currency), rightX, totalY, { align: 'right' });
+    doc.text(formatCurrency(invoiceData.shippingCost, invoiceData.currency), 158, totalY, { align: 'center' });
     totalY += 6;
   }
 
   // Total line
   doc.setDrawColor(...primaryColor);
   doc.setLineWidth(0.5);
-  doc.line(126, totalY - 2, 196, totalY - 2);
+  doc.line(126, totalY - 2, 190, totalY - 2);
   doc.setTextColor(...whiteColor);
-  doc.setFontSize(13);
+  doc.setFontSize(15);
   doc.setFont('helvetica', 'bold');
   doc.text('Total:', 126, totalY + 5);
-  doc.text(formatCurrency(invoiceData.total || 0, invoiceData.currency), rightX, totalY + 5, { align: 'right' });
+  doc.text(formatCurrency(invoiceData.total || 0, invoiceData.currency), 158, totalY + 5, { align: 'center' });
 
   // Notes and Terms
   let notesY = totalY + 15;
   if (invoiceData.notes) {
     doc.setTextColor(...grayColor);
-    doc.setFontSize(8);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.text('NOTES', 14, notesY);
     notesY += 5;
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
+    doc.setFontSize(11);
     doc.setTextColor(...darkColor);
     const notesLines = doc.splitTextToSize(invoiceData.notes, 182);
     doc.text(notesLines, 14, notesY);
     notesY += notesLines.length * 4 + 5;
   }
 
-  if (invoiceData.terms) {
-    doc.setTextColor(...grayColor);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.text('TERMS & CONDITIONS', 14, notesY);
-    notesY += 5;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(...darkColor);
-    const termsLines = doc.splitTextToSize(invoiceData.terms, 182);
-    doc.text(termsLines, 14, notesY);
-  }
+    // Footer with Payment Details (replaces "Generated with InvoiceGen")
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const footerY = pageHeight - 30;
 
-  // Footer
-  const pageHeight = doc.internal.pageSize.getHeight();
-  doc.setFontSize(8);
-  doc.setTextColor(...grayColor);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Generated with InvoiceGen', 105, pageHeight - 8, { align: 'center' });
+    // Dark footer background
+    doc.setFillColor(...darkColor);
+    doc.rect(0, footerY - 8, 210, 38, 'F');
+
+    doc.setTextColor(...lightTextColor);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PAYMENT DETAILS', 14, footerY);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(...whiteColor);
+
+    // Get user's payment account details from settings
+    const accountHolder = userSettings?.accountHolder || 'Evolution p+w';
+    const bankName1 = userSettings?.bankName1 || 'Providus';
+    const accountNumber1 = userSettings?.accountNumber1 || '1306897503';
+    const bankName2 = userSettings?.bankName2 || 'United Bank of Africa';
+    const accountNumber2 = userSettings?.accountNumber2 || '1021788922';
+    const hasSecondAccount = bankName2 && accountNumber2;
+
+    // Left column - Account 1
+    doc.text(`Account Holder: ${accountHolder}`, 14, footerY + 6);
+    doc.text(`Bank: ${bankName1}`, 14, footerY + 11);
+    doc.text(`Account No: ${accountNumber1}`, 14, footerY + 16);
+
+    // Right column - Account 2 (if provided)
+    if (hasSecondAccount) {
+      doc.text(`Bank: ${bankName2}`, 110, footerY + 6);
+      doc.text(`Account No: ${accountNumber2}`, 110, footerY + 11);
+    }
 }
 
 function blobToBase64(blob) {
@@ -2197,7 +2292,11 @@ function formatCurrency(amount, currency = 'USD') {
     AUD: 'A$',
   };
   const symbol = symbols[currency] || '$';
-  return `${symbol}${Number(amount || 0).toFixed(2)}`;
+  const formatted = Number(amount || 0).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return `${symbol}${formatted}`;
 }
 
 function formatDate(dateStr) {
