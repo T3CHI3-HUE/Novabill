@@ -621,21 +621,13 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Account Holder Name</label>
                     <input type="text" id="settings-account-holder" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Evolution p+w">
                   </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Bank Name 1</label>
-                    <input type="text" id="settings-bank-name-1" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Providus">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Account Number 1</label>
-                    <input type="text" id="settings-account-number-1" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="1306897503">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Bank Name 2 (optional)</label>
-                    <input type="text" id="settings-bank-name-2" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="United Bank of Africa">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Account Number 2 (optional)</label>
-                    <input type="text" id="settings-account-number-2" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="1021788922">
+                  <div class="md:col-span-2">
+                    <div class="flex items-center justify-between mb-2">
+                      <label class="block text-sm font-medium text-gray-700">Bank Accounts</label>
+                      <button type="button" onclick="addPaymentAccountRow()" class="text-sm text-indigo-600 font-medium hover:underline">+ Add Account</button>
+                    </div>
+                    <div id="accounts-list" class="space-y-3"></div>
+                    <p class="text-xs text-gray-400 mt-2">Add one or more bank accounts. All of them will be shown on your invoices and PDFs.</p>
                   </div>
                 </div>
               </div>

@@ -96,10 +96,10 @@ function initFirebase() {
           companyCountry: '',
           currency: 'USD',
           accountHolder: 'Evolution p+w',
-          bankName1: 'Providus',
-          accountNumber1: '1306897503',
-          bankName2: 'United Bank of Africa',
-          accountNumber2: '1021788922',
+          paymentAccounts: [
+            { id: generateId(), bankName: 'Providus', accountNumber: '1306897503' },
+            { id: generateId(), bankName: 'United Bank of Africa', accountNumber: '1021788922' }
+          ],
           createdAt: nowTimestamp()
         });
         saveDB(db);
@@ -382,26 +382,27 @@ async function loadSettings() {
     const settings = db.settings.filter(s => s.userId === currentUser.id);
     if (settings.length > 0) {
       userSettings = settings[0];
-      // Backfill default account details for existing users who don't have them yet
+      // Backfill default details for existing users
       let needsUpdate = false;
       if (!userSettings.accountHolder) {
         userSettings.accountHolder = 'Evolution p+w';
         needsUpdate = true;
       }
-      if (!userSettings.bankName1) {
-        userSettings.bankName1 = 'Providus';
-        needsUpdate = true;
-      }
-      if (!userSettings.accountNumber1) {
-        userSettings.accountNumber1 = '1306897503';
-        needsUpdate = true;
-      }
-      if (!userSettings.bankName2) {
-        userSettings.bankName2 = 'United Bank of Africa';
-        needsUpdate = true;
-      }
-      if (!userSettings.accountNumber2) {
-        userSettings.accountNumber2 = '1021788922';
+      // Migrate legacy bankName1/accountNumber1/bankName2/accountNumber2 fields to a paymentAccounts array
+      if (!Array.isArray(userSettings.paymentAccounts)) {
+        const legacyAccounts = [];
+        if (userSettings.bankName1 || userSettings.accountNumber1) {
+          legacyAccounts.push({ id: generateId(), bankName: userSettings.bankName1 || '', accountNumber: userSettings.accountNumber1 || '' });
+        }
+        if (userSettings.bankName2 || userSettings.accountNumber2) {
+          legacyAccounts.push({ id: generateId(), bankName: userSettings.bankName2 || '', accountNumber: userSettings.accountNumber2 || '' });
+        }
+        userSettings.paymentAccounts = legacyAccounts.length > 0
+          ? legacyAccounts
+          : [
+              { id: generateId(), bankName: 'Providus', accountNumber: '1306897503' },
+              { id: generateId(), bankName: 'United Bank of Africa', accountNumber: '1021788922' }
+            ];
         needsUpdate = true;
       }
       if (needsUpdate) {
@@ -417,6 +418,23 @@ async function loadSettings() {
   } catch (error) {
     console.error('Error loading settings:', error);
   }
+}
+
+// Returns the normalized payment accounts array from settings, merging legacy fields if present
+function getPaymentAccounts(settings) {
+  if (!settings) return [];
+  if (Array.isArray(settings.paymentAccounts)) {
+    return settings.paymentAccounts.filter(a => a && (a.bankName || a.accountNumber));
+  }
+  // Legacy fields (bankName1/accountNumber1/bankName2/accountNumber2)
+  const accounts = [];
+  if (settings.bankName1 || settings.accountNumber1) {
+    accounts.push({ id: generateId(), bankName: settings.bankName1 || '', accountNumber: settings.accountNumber1 || '' });
+  }
+  if (settings.bankName2 || settings.accountNumber2) {
+    accounts.push({ id: generateId(), bankName: settings.bankName2 || '', accountNumber: settings.accountNumber2 || '' });
+  }
+  return accounts;
 }
 
 // ============================================================
@@ -1232,10 +1250,57 @@ function loadSettingsIntoForm() {
   document.getElementById('settings-company-country').value = userSettings.companyCountry || '';
   document.getElementById('settings-currency').value = userSettings.currency || 'USD';
   document.getElementById('settings-account-holder').value = userSettings.accountHolder || '';
-  document.getElementById('settings-bank-name-1').value = userSettings.bankName1 || '';
-  document.getElementById('settings-account-number-1').value = userSettings.accountNumber1 || '';
-  document.getElementById('settings-bank-name-2').value = userSettings.bankName2 || '';
-  document.getElementById('settings-account-number-2').value = userSettings.accountNumber2 || '';
+  renderPaymentAccountsForm();
+}
+
+function renderPaymentAccountsForm() {
+  const container = document.getElementById('accounts-list');
+  const accounts = getPaymentAccounts(userSettings);
+  container.innerHTML = '';
+  if (accounts.length === 0) {
+    addPaymentAccountRow();
+  } else {
+    accounts.forEach((account, index) => addPaymentAccountRow(account, index));
+  }
+}
+
+function addPaymentAccountRow(account = {}, index = null) {
+  const container = document.getElementById('accounts-list');
+  const row = document.createElement('div');
+  row.className = 'grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200';
+  const displayIndex = index === null ? container.children.length : index;
+  row.innerHTML = `
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Bank Name ${displayIndex + 1}</label>
+      <input type="text" class="account-bank-name w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="Providus" value="${escapeAttr(account.bankName || '')}">
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Account Number ${displayIndex + 1}</label>
+      <div class="flex gap-2">
+        <input type="text" class="account-number w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" placeholder="1306897503" value="${escapeAttr(account.accountNumber || '')}">
+        <button type="button" onclick="removePaymentAccountRow(this)" class="shrink-0 px-2 text-gray-400 hover:text-red-600 transition" title="Remove account">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+  `;
+  container.appendChild(row);
+}
+
+function removePaymentAccountRow(btn) {
+  const container = document.getElementById('accounts-list');
+  const row = btn.closest('.grid');
+  if (row) {
+    row.remove();
+    // Re-number remaining rows
+    Array.from(container.children).forEach((child, i) => {
+      const labels = child.querySelectorAll('label');
+      if (labels.length >= 2) {
+        labels[0].textContent = 'Bank Name ' + (i + 1);
+        labels[1].textContent = 'Account Number ' + (i + 1);
+      }
+    });
+  }
 }
 
 function loadSettingsIntoEditor() {
@@ -1253,6 +1318,18 @@ function loadSettingsIntoEditor() {
 async function saveSettings() {
   if (!currentUser) return;
 
+  // Collect dynamic payment accounts from the form
+  const accountRows = document.querySelectorAll('#accounts-list .account-bank-name');
+  const paymentAccounts = [];
+  accountRows.forEach((input) => {
+    const row = input.closest('.grid');
+    const bankName = input.value.trim();
+    const accountNumber = row.querySelector('.account-number').value.trim();
+    if (bankName || accountNumber) {
+      paymentAccounts.push({ id: generateId(), bankName: bankName, accountNumber: accountNumber });
+    }
+  });
+
   const settingsData = {
     userId: currentUser.id,
     companyName: document.getElementById('settings-company-name').value.trim(),
@@ -1264,10 +1341,7 @@ async function saveSettings() {
     companyCountry: document.getElementById('settings-company-country').value.trim(),
     currency: document.getElementById('settings-currency').value,
     accountHolder: document.getElementById('settings-account-holder').value.trim(),
-    bankName1: document.getElementById('settings-bank-name-1').value.trim(),
-    accountNumber1: document.getElementById('settings-account-number-1').value.trim(),
-    bankName2: document.getElementById('settings-bank-name-2').value.trim(),
-    accountNumber2: document.getElementById('settings-account-number-2').value.trim(),
+    paymentAccounts: paymentAccounts,
     updatedAt: nowTimestamp()
   };
 
@@ -1356,11 +1430,7 @@ function renderInvoiceHTML(inv) {
 
   // Get user's payment account details from settings
   const accountHolder = userSettings?.accountHolder || 'Evolution p+w';
-  const bankName1 = userSettings?.bankName1 || 'Providus';
-  const accountNumber1 = userSettings?.accountNumber1 || '1306897503';
-  const bankName2 = userSettings?.bankName2 || 'United Bank of Africa';
-  const accountNumber2 = userSettings?.accountNumber2 || '1021788922';
-  const hasSecondAccount = bankName2 && accountNumber2;
+  const paymentAccounts = getPaymentAccounts(userSettings);
 
   const itemsRows = (inv.items || []).map(item => `
     <tr class="border-b border-gray-100">
@@ -1497,11 +1567,10 @@ function renderInvoiceHTML(inv) {
       <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Payment Details</p>
       <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
         <p class="text-sm text-gray-300"><span class="font-semibold text-white">Account Holder:</span> ${escapeHtml(accountHolder)}</p>
-        <p class="text-sm text-gray-300"><span class="font-semibold text-white">Bank:</span> ${escapeHtml(bankName1)}</p>
-        <p class="text-sm text-gray-300"><span class="font-semibold text-white">Account No:</span> ${escapeHtml(accountNumber1)}</p>
-        ${hasSecondAccount ? `
-        <p class="text-sm text-gray-300"><span class="font-semibold text-white">Bank:</span> ${escapeHtml(bankName2)}</p>
-        <p class="text-sm text-gray-300"><span class="font-semibold text-white">Account No:</span> ${escapeHtml(accountNumber2)}</p>` : ''}
+        ${paymentAccounts.map(acc => `
+        <p class="text-sm text-gray-300"><span class="font-semibold text-white">Bank:</span> ${escapeHtml(acc.bankName)}</p>
+        <p class="text-sm text-gray-300"><span class="font-semibold text-white">Account No:</span> ${escapeHtml(acc.accountNumber)}</p>
+        `).join('')}
       </div>
     </div>
   `;
@@ -1761,12 +1830,28 @@ function generatePDF() {
     }
 
     // Footer with Payment Details (replaces "Generated with InvoiceGen")
+    // Get user's payment account details from settings
+    const accountHolder = userSettings?.accountHolder || 'Evolution p+w';
+    const paymentAccounts = getPaymentAccounts(userSettings);
+
+    // Build compact single-line account entries so any number of accounts can display
+    const accountLines = paymentAccounts.map(acc => {
+      const parts = [];
+      if (acc.bankName) parts.push(`Bank: ${acc.bankName}`);
+      if (acc.accountNumber) parts.push(`Acct No: ${acc.accountNumber}`);
+      return parts.join('  •  ');
+    }).filter(Boolean);
+
+    // Footer height scales with the number of accounts
+    const footerContentLines = accountLines.length + 1; // account holder + each account line
+    const footerHeight = Math.max(38, 18 + footerContentLines * 5 + 6);
+
     const pageHeight = doc.internal.pageSize.getHeight();
-    const footerY = pageHeight - 30;
+    const footerY = pageHeight - footerHeight + 8;
 
     // Dark footer background
     doc.setFillColor(...darkColor);
-    doc.rect(0, footerY - 8, 210, 38, 'F');
+    doc.rect(0, footerY - 8, 210, footerHeight, 'F');
 
     doc.setTextColor(...lightTextColor);
     doc.setFontSize(9);
@@ -1777,24 +1862,14 @@ function generatePDF() {
     doc.setFontSize(10);
     doc.setTextColor(...whiteColor);
 
-    // Get user's payment account details from settings
-    const accountHolder = userSettings?.accountHolder || 'Evolution p+w';
-    const bankName1 = userSettings?.bankName1 || 'Providus';
-    const accountNumber1 = userSettings?.accountNumber1 || '1306897503';
-    const bankName2 = userSettings?.bankName2 || 'United Bank of Africa';
-    const accountNumber2 = userSettings?.accountNumber2 || '1021788922';
-    const hasSecondAccount = bankName2 && accountNumber2;
+    let fy = footerY + 6;
+    doc.text(`Account Holder: ${accountHolder}`, 14, fy);
+    fy += 5;
 
-    // Left column - Account 1
-    doc.text(`Account Holder: ${accountHolder}`, 14, footerY + 6);
-    doc.text(`Bank: ${bankName1}`, 14, footerY + 11);
-    doc.text(`Account No: ${accountNumber1}`, 14, footerY + 16);
-
-    // Right column - Account 2 (if provided)
-    if (hasSecondAccount) {
-      doc.text(`Bank: ${bankName2}`, 110, footerY + 6);
-      doc.text(`Account No: ${accountNumber2}`, 110, footerY + 11);
-    }
+    accountLines.forEach(line => {
+      doc.text(line, 14, fy);
+      fy += 5;
+    });
 
     // Save PDF
     const fileName = `${invoiceData.number || 'invoice'}.pdf`;
@@ -2182,12 +2257,28 @@ function buildPDF(doc, invoiceData) {
   }
 
     // Footer with Payment Details (replaces "Generated with InvoiceGen")
+    // Get user's payment account details from settings
+    const accountHolder = userSettings?.accountHolder || 'Evolution p+w';
+    const paymentAccounts = getPaymentAccounts(userSettings);
+
+    // Build compact single-line account entries so any number of accounts can display
+    const accountLines = paymentAccounts.map(acc => {
+      const parts = [];
+      if (acc.bankName) parts.push(`Bank: ${acc.bankName}`);
+      if (acc.accountNumber) parts.push(`Acct No: ${acc.accountNumber}`);
+      return parts.join('  •  ');
+    }).filter(Boolean);
+
+    // Footer height scales with the number of accounts
+    const footerContentLines = accountLines.length + 1; // account holder + each account line
+    const footerHeight = Math.max(38, 18 + footerContentLines * 5 + 6);
+
     const pageHeight = doc.internal.pageSize.getHeight();
-    const footerY = pageHeight - 30;
+    const footerY = pageHeight - footerHeight + 8;
 
     // Dark footer background
     doc.setFillColor(...darkColor);
-    doc.rect(0, footerY - 8, 210, 38, 'F');
+    doc.rect(0, footerY - 8, 210, footerHeight, 'F');
 
     doc.setTextColor(...lightTextColor);
     doc.setFontSize(9);
@@ -2198,24 +2289,14 @@ function buildPDF(doc, invoiceData) {
     doc.setFontSize(10);
     doc.setTextColor(...whiteColor);
 
-    // Get user's payment account details from settings
-    const accountHolder = userSettings?.accountHolder || 'Evolution p+w';
-    const bankName1 = userSettings?.bankName1 || 'Providus';
-    const accountNumber1 = userSettings?.accountNumber1 || '1306897503';
-    const bankName2 = userSettings?.bankName2 || 'United Bank of Africa';
-    const accountNumber2 = userSettings?.accountNumber2 || '1021788922';
-    const hasSecondAccount = bankName2 && accountNumber2;
+    let fy = footerY + 6;
+    doc.text(`Account Holder: ${accountHolder}`, 14, fy);
+    fy += 5;
 
-    // Left column - Account 1
-    doc.text(`Account Holder: ${accountHolder}`, 14, footerY + 6);
-    doc.text(`Bank: ${bankName1}`, 14, footerY + 11);
-    doc.text(`Account No: ${accountNumber1}`, 14, footerY + 16);
-
-    // Right column - Account 2 (if provided)
-    if (hasSecondAccount) {
-      doc.text(`Bank: ${bankName2}`, 110, footerY + 6);
-      doc.text(`Account No: ${accountNumber2}`, 110, footerY + 11);
-    }
+    accountLines.forEach(line => {
+      doc.text(line, 14, fy);
+      fy += 5;
+    });
 }
 
 function blobToBase64(blob) {
