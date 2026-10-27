@@ -173,22 +173,24 @@
     <!-- Main Content -->
     <div class="flex-1 lg:ml-64 flex flex-col min-h-screen">
       <!-- Topbar -->
-      <header class="bg-white border-b border-gray-200 px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between sticky top-0 z-20">
-        <div class="flex items-center gap-3">
-          <button id="menu-btn" class="lg:hidden p-2 rounded-lg hover:bg-gray-100">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-          </button>
-          <h1 id="page-title" class="text-xl font-bold text-gray-900">Dashboard</h1>
-        </div>
-        <div class="flex items-center gap-3">
-          <button id="new-invoice-top-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-2">
-            <span class="text-lg leading-none">+</span> New Invoice
-          </button>
-          <div class="w-9 h-9 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center font-bold text-sm" id="topbar-avatar">U</div>
+      <header class="bg-white border-b border-gray-200 sticky top-0 z-20">
+        <div class="app-content py-3 sm:py-4 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <button id="menu-btn" class="lg:hidden p-2 rounded-lg hover:bg-gray-100">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <h1 id="page-title" class="text-xl font-bold text-gray-900">Dashboard</h1>
+          </div>
+          <div class="flex items-center gap-3">
+            <button id="new-invoice-top-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-2">
+              <span class="text-lg leading-none">+</span> New Invoice
+            </button>
+            <div class="w-9 h-9 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center font-bold text-sm" id="topbar-avatar">U</div>
+          </div>
         </div>
       </header>
 
-      <main class="flex-1 p-3 sm:p-6">
+      <main class="flex-1 app-content py-5 sm:py-6">
         <!-- ========== DASHBOARD VIEW ========== -->
         <section id="dashboard-view" class="view-section">
           <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
